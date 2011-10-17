@@ -25,6 +25,8 @@
 #include "xplcache.h"
 
 using namespace boost::algorithm;
+using namespace boost::posix_time;
+using namespace boost::filesystem;
 
 timeStreamHelper timeConverter;
 
@@ -33,10 +35,10 @@ xPLCacheClass::CacheFilter::CacheFilter() :
   mfInstance( "*" ), mfSchemType( "*" ), mfSchemClass( "*" ), expiry( false )
 {}
 
-xPLCacheClass::CacheFilter::CacheFilter( const string& filter ) :
+xPLCacheClass::CacheFilter::CacheFilter( const std::string& filter ) :
   prefTag( "cache" ), expiry( false )
 {
-  vector<string> list;
+  std::vector<std::string> list;
   split( list, filter, is_any_of(".") );
   mfType       = list[0];
   mfVendor     = list[1];
@@ -51,16 +53,16 @@ xPLCacheClass::xPLCacheClass()
   loadCache();
 }
 
-string xPLCacheClass::listAllObjects( bool forceEverything ) const
+std::string xPLCacheClass::listAllObjects( bool forceEverything ) const
 {
   writeLog( "xPLCacheClass::ListAllObjects()", logLevel::debug );
 
-  string result;
+  std::string result;
   shared_lock locker(cacheLock);
 
   for( cacheMap::const_iterator it = cache.begin(); it != cache.end(); it++ )
   {
-    string name = it->first;
+    std::string name = it->first;
     if( starts_with( name, "device." ) )
     {
       if( forceEverything || iequals( "true", cache.find("xplhal.showdevices")->second.value ) )
@@ -80,19 +82,19 @@ string xPLCacheClass::listAllObjects( bool forceEverything ) const
   return result;
 }
 
-void xPLCacheClass::updateEntry( const string& name, const string& value, const bool expires )
+void xPLCacheClass::updateEntry( const std::string& name, const std::string& value, const bool expires )
 {
   writeLog( "xPLCacheClass::updateEntry( \"" + name + "\", \"" + value + "\" )", logLevel::debug );
   unique_lock locker(cacheLock);
 
   cacheMap::iterator it = cache.find( name );
   if( cache.end() == it )
-    cache.insert( std::pair<string,CacheEntry>( name, CacheEntry( value, expires ) ) );
+    cache.insert( std::pair<std::string,CacheEntry>( name, CacheEntry( value, expires ) ) );
   else
     it->second = CacheEntry( value, expires );
 }
 
-void xPLCacheClass::deleteEntry( const string& name )
+void xPLCacheClass::deleteEntry( const std::string& name )
 {
   writeLog( "xPLCacheClass::deleteEntry( \"" + name + "\" )", logLevel::debug );
   unique_lock locker(cacheLock);
@@ -113,9 +115,9 @@ void xPLCacheClass::flushExpiredEntries( void )
   }
 }
 
-vector<string> xPLCacheClass::childNodes( const string& filter ) const
+std::vector<std::string> xPLCacheClass::childNodes( const std::string& filter ) const
 {
-  vector<string> retval;
+  std::vector<std::string> retval;
 
   for( cacheMap::const_iterator it = cache.begin(); it != cache.end(); ++it )
     if( starts_with( it->first, filter ) )
@@ -124,9 +126,9 @@ vector<string> xPLCacheClass::childNodes( const string& filter ) const
   return retval;
 }
 
-vector<string> xPLCacheClass::filterByRegEx( const boost::regex& regex ) const
+std::vector<std::string> xPLCacheClass::filterByRegEx( const boost::regex& regex ) const
 {
-  vector<string> retval;
+  std::vector<std::string> retval;
 
   for( cacheMap::const_iterator it = cache.begin(); it != cache.end(); ++it )
   {

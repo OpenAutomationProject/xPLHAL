@@ -25,11 +25,10 @@
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 
-using boost::asio::ip::tcp;
 
 #include "xplcache.h"
 
-typedef boost::shared_ptr<tcp::socket> socket_ptr;
+typedef boost::shared_ptr<boost::asio::ip::tcp::tcp::socket> socket_ptr;
 
 /**
  * \brief Single connection to an xPLHAL Manager.
@@ -41,9 +40,9 @@ typedef boost::shared_ptr<tcp::socket> socket_ptr;
 class XHCPThread
 {
     volatile bool m_stoprequested;
-    const string tab;
-    const string newLine;
-    const string endMultiLine;
+    const std::string tab;
+    const std::string newLine;
+    const std::string endMultiLine;
 
   public:
     XHCPThread( socket_ptr socket );

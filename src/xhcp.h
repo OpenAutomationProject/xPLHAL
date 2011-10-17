@@ -23,8 +23,8 @@
 #include <boost/thread.hpp>
 
 #include "xplcache.h"
+#include "xhcpthread.h"
 
-using boost::asio::ip::tcp;
 
 /**
  * \brief Manage all XHCP connetions.
@@ -32,21 +32,19 @@ using boost::asio::ip::tcp;
 class XHCPServer
 {
   boost::asio::io_service io_service;
-  tcp::acceptor acceptor;
+  boost::asio::ip::tcp::tcp::acceptor acceptor;
   volatile bool m_stoprequested;
   boost::thread m_thread;
 
   public:
     XHCPServer();
-    ~XHCPServer()
-    {
-        m_stoprequested = true;
-        m_thread.join();
-    }
+    ~XHCPServer();
 
   protected:
     /** \brief Create a new XHCPThread for a new connection. */
     void waitForConnection( void );
+    void handleAccept(socket_ptr sockPtr);
+    void startAccept();
 };
 
 #endif // XHCP_H

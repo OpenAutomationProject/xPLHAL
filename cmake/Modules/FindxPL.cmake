@@ -3,11 +3,13 @@
 find_path( xPL_INCLUDE_DIR 
   NAMES xPL.h 
   PATHS /usr/local/include
+  PATHS /home/thomas/projects/xPLLib
 )
 
 find_library( xPL_LIBRARY
   NAMES libxPL.so
   PATHS /usr/local/lib
+  PATHS /home/thomas/projects/xPLLib
 )
 
 set( xPL_FOUND TRUE )

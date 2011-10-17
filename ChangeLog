@@ -1,0 +1,8 @@
+
+2011-10-17:
+Experimentally using c++0x features available with gcc-4.6.
+To compile create clean 'build' directory and call from build-dir:
+"CXX=g++-4.6 cmake .."
+
+Boost-Test is not working yet.
+

@@ -20,7 +20,6 @@
 #define GLOBALS_H
 
 #include "boost/filesystem.hpp"
-using namespace boost::filesystem;
 
 /**
  * Define all global variables:
@@ -41,9 +40,9 @@ class xPLMessageQueueClass;
 extern xPLMessageQueueClass *xPLMessageQueue;
 
 /** The working directories */
-extern path xPLHalRootFolder;
-extern path DataFileFolder;
-extern path ScriptEngineFolder;
-extern path rulesFolder;
+extern boost::filesystem::path xPLHalRootFolder;
+extern boost::filesystem::path DataFileFolder;
+extern boost::filesystem::path ScriptEngineFolder;
+extern boost::filesystem::path rulesFolder;
 
 #endif // GLOBALS_H

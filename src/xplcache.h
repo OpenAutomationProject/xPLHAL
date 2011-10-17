@@ -27,30 +27,28 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/regex.hpp>
 
-using namespace std;
-using namespace boost::posix_time;
 
 /** Helper function */
 class timeStreamHelper
 {
-    stringstream timeStream;
+    std::stringstream timeStream;
   public:
     timeStreamHelper()
     {
-      time_facet* output_facet = new time_facet( "%d.%m.%Y %H:%M:%S" );
-      timeStream.imbue(locale(timeStream.getloc(), output_facet));
-      time_input_facet* input_facet = new time_input_facet( "%d.%m.%Y %H:%M:%S" );
-      timeStream.imbue(locale(timeStream.getloc(), input_facet));
+      boost::posix_time::time_facet* output_facet = new boost::posix_time::time_facet( "%d.%m.%Y %H:%M:%S" );
+      timeStream.imbue(std::locale(timeStream.getloc(), output_facet));
+      boost::posix_time::time_input_facet* input_facet = new boost::posix_time::time_input_facet( "%d.%m.%Y %H:%M:%S" );
+      timeStream.imbue(std::locale(timeStream.getloc(), input_facet));
     }
-    string operator()( const ptime& time )
+    std::string operator()( const boost::posix_time::ptime& time )
     {
       timeStream.str("");
       timeStream << time;
       return timeStream.str();
     }
-    ptime operator()( const string& time )
+    boost::posix_time::ptime operator()( const std::string& time )
     {
-      ptime retval;
+      boost::posix_time::ptime retval;
       timeStream.str("");
       timeStream << time;
       timeStream >> retval;
@@ -74,17 +72,17 @@ class xPLCacheClass
     */
     struct CacheEntry
     {
-      string value;  /**< \brief Value of the xPL message.         */
-      ptime  date;   /**< \brief Timestamp of time of entry.       */
+      std::string value;  /**< \brief Value of the xPL message.         */
+      boost::posix_time::ptime  date;   /**< \brief Timestamp of time of entry.       */
       bool   expiry; /**< \brief Flag if this entry should expire. */
 
       /** \brief Construct the entry with a current timestamp. */
-      CacheEntry( const string& v, bool expires ) : value( v ), date( second_clock::local_time() ), expiry( expires ) {}
+      CacheEntry( const std::string& v, bool expires ) : value( v ), date( boost::posix_time::second_clock::local_time() ), expiry( expires ) {}
     };
 
     /** \brief Link a QString as the name to the corresponding value in
      *         the CacheEntry with fast lookup. */
-    typedef std::map< string, CacheEntry > cacheMap;
+    typedef std::map< std::string, CacheEntry > cacheMap;
     cacheMap cache; /**< \brief The cache itself. */
 
      /** \brief variable to lock write operations on the cache for safe
@@ -98,20 +96,20 @@ class xPLCacheClass
     */
     struct CacheFilter
     {
-      string prefTag;
-      string mfType;
-      string mfVendor;
-      string mfDevice;
-      string mfInstance;
-      string mfSchemType;
-      string mfSchemClass;
+      std::string prefTag;
+      std::string mfType;
+      std::string mfVendor;
+      std::string mfDevice;
+      std::string mfInstance;
+      std::string mfSchemType;
+      std::string mfSchemClass;
       bool expiry;
 
       CacheFilter();
-      CacheFilter( const string& filter );
+      CacheFilter( const std::string& filter );
 
       /** \returns the xPL filter. */
-      string xPLFilter( void ) const 
+      std::string xPLFilter( void ) const 
       {
         return mfType + "." + mfVendor + "." + mfDevice + "." + mfInstance + "." + mfSchemType + "." + mfSchemClass;
       }
@@ -121,33 +119,33 @@ class xPLCacheClass
     xPLCacheClass();
 
     /** \returns true if the element name exists. */
-    bool exists( const string& name ) const
+    bool exists( const std::string& name ) const
     { return cache.end() != cache.find( name ); }
 
-    /** \returns the value of element name if it exists - or an empty string otherwise. */
-    string objectValue( const string& name ) const
-    { cacheMap::const_iterator it = cache.find( name ); if( cache.end() == it ) return string(); else return it->second.value; }
+    /** \returns the value of element name if it exists - or an empty std::string otherwise. */
+    std::string objectValue( const std::string& name ) const
+    { cacheMap::const_iterator it = cache.find( name ); if( cache.end() == it ) return std::string(); else return it->second.value; }
 
     /** \returns all objectes stored in the cache. */
-    string listAllObjects( bool forceEverything = false  ) const;
+    std::string listAllObjects( bool forceEverything = false  ) const;
 
     /** \brief Create a new object or update it if it exists in the cache. */
-    void updateEntry( const string& name, const string& value, const bool expires = true );
+    void updateEntry( const std::string& name, const std::string& value, const bool expires = true );
 
     /** \brief Delete an object if it exists in the cache - or do nothing. */
-    void deleteEntry( const string& name );
+    void deleteEntry( const std::string& name );
 
     /** \brief Delete all expired entries. */
     void flushExpiredEntries( void );
 
     /** \returns all entries that start with filter. */
-    vector<string> childNodes( const string& filter ) const;
+    std::vector<std::string> childNodes( const std::string& filter ) const;
 
     /** \returns all entries that fit the regular expression. */
-    vector<string> filterByRegEx( const boost::regex& regex ) const;
+    std::vector<std::string> filterByRegEx( const boost::regex& regex ) const;
 
     /** \returns all entries that fit the regular expression. */
-    vector<string> filterByRegEx( const string& regex ) const
+    std::vector<std::string> filterByRegEx( const std::string& regex ) const
     { return filterByRegEx( boost::regex( regex ) ); }
 
     /** \brief Load object cache from file system */

@@ -21,26 +21,50 @@
 
 #include "xhcp.h"
 
+using boost::asio::ip::tcp;
+
 XHCPServer::XHCPServer()
  : acceptor(io_service, tcp::endpoint(tcp::v4(), 3865)),
-   m_stoprequested(false),  
+   m_stoprequested(false),
    m_thread(boost::bind(&XHCPServer::waitForConnection, this))
-{}
+{
+    startAccept();
+}
+
+XHCPServer::~XHCPServer()    
+{
+    m_stoprequested = true;
+    acceptor.cancel();
+    acceptor.close();
+    io_service.stop();
+    m_thread.join();
+}
+
+void XHCPServer::startAccept()
+{
+    socket_ptr sockPtr(new tcp::socket(io_service));
+    acceptor.async_accept(*sockPtr, boost::bind(&XHCPServer::handleAccept, this, sockPtr));
+}
+
+void XHCPServer::handleAccept(socket_ptr sockPtr)
+{
+    startAccept();
+    XHCPThread* foo = new XHCPThread( sockPtr );
+}
 
 void XHCPServer::waitForConnection( void )
 {
-  writeLog( "XHCPServer::waitForConnection", logLevel::debug );
-  while (!m_stoprequested)
-  {
-    std::cerr << "for(;;) start \n";
-    socket_ptr sockPtr(new tcp::socket(io_service));
-    std::cerr << "for(;;) 1 \n";
-    acceptor.accept(*sockPtr);
-    std::cerr << "for(;;) 2 \n";
-    //boost::thread t(boost::bind(&XHCPServer::session, this, sock));
-    std::cerr << "for(;;) use_count: " << sockPtr.use_count() << "\n";
-    XHCPThread* foo = new XHCPThread( sockPtr );
-    std::cerr << "for(;;) foo: " << int(foo) << "\n";
-    std::cerr << "for(;;) end \n";
-  }
+    writeLog( "XHCPServer::waitForConnection", logLevel::debug );
+    io_service.run();
+    /*
+    while (!m_stoprequested)
+    {
+        socket_ptr sockPtr(new tcp::socket(io_service));
+        writeLog("XHCPServer::waitForConnection in accept", logLevel::debug);
+        acceptor.accept(*sockPtr);
+        writeLog("XHCPServer::waitForConnection left accept", logLevel::debug);
+
+        XHCPThread* foo = new XHCPThread( sockPtr );
+    }
+    */
 }

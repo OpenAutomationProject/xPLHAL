@@ -14,16 +14,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-project(xPLHAL)
+#project(xPLHALTest)
 cmake_minimum_required(VERSION 2.6)
 
-#set(CMAKE_CXX_FLAGS "-g -O2 -std=c++0x")
-set(CMAKE_CXX_FLAGS "-g -std=c++0x")
-set(xPLHAL_SRCS xplmessagequeue.cpp devicemanager.cpp xplhandler.cpp xplcache.cpp xhcpthread.cpp log.cpp xhcp.cpp main.cpp)
+set(CMAKE_CXX_FLAGS "-g -Os")
+set(xPLHALTest_SRCS test_test.cpp)
 
-add_executable(xPLHAL ${xPLHAL_SRCS})
+add_executable(test_runner ${xPLHALTest_SRCS})
 #message(STATUS "Boost_LIBRARIES=${Boost_LIBRARIES}")
 #message(STATUS "LIBRARIES=${LIBS}")
 #target_link_libraries(xPLHAL ${Boost_LIBRARIES} -dynamic xPL pthread -static)
-target_link_libraries(xPLHAL ${LIBS})
+target_link_libraries(test_runner ${LIBS} boost_unit_test_framework-mt)
 

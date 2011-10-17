@@ -37,7 +37,7 @@ endif(create_STATIC_build)
 
 #set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost 1.38 COMPONENTS thread system filesystem date_time regex )
+find_package(Boost 1.38 COMPONENTS thread system filesystem date_time regex unit_test_framework)
 
 find_package(xPL REQUIRED)
 set(LIBS ${LIBS} ${Boost_LIBRARIES} ${xPL_LIBRARIES} pthread)
@@ -65,4 +65,5 @@ else(Boost_USE_STATIC_LIBS)
 endif(Boost_USE_STATIC_LIBS)
 
 add_subdirectory(src)
+add_subdirectory(test)
 

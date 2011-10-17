@@ -26,8 +26,6 @@
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
 
-using namespace std;
-
 // this is also including the xPL.h
 #include "xplmessagequeue.h"
 
@@ -36,40 +34,45 @@ using namespace std;
  */
 class xPLHandler
 {
-     /** \brief variable to ensure that the xPL library is only called at the same time... */
-     //mutable boost::mutex xPLLock;
-     //typedef boost::lock_guard<boost::mutex> lock_guard;
+    /** \brief variable to ensure that the xPL library is only called at the same time... */
+    //mutable boost::mutex xPLLock;
+    //typedef boost::lock_guard<boost::mutex> lock_guard;
 
-  public:
-    xPLHandler( const string& host_name );
-    ~xPLHandler();
+    public:
+        xPLHandler( const std::string& host_name );
+        ~xPLHandler();
 
-    void run();
+        void run();
 
-    /** \brief Broadcast one message to the xPL network. */
-    void sendBroadcastMessage( const string& msgClass, const string& msgType, const xPLMessage::namedValueList& namedValues ) const;
+        /** \brief Broadcast one message to the xPL network. */
+        void sendBroadcastMessage( const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues ) const;
 
-     /** \brief Send a directed message to the xPL network. */
-    void sendMessage( const xPL_MessageType type, const string& tgtVendor, const string& tgtDeviceID, 
-                      const string& tgtInstanceID, const string& msgClass, const string& msgType, 
-                      const xPLMessage::namedValueList& namedValues ) const;
+        /** \brief Send a directed message to the xPL network. */
+        void sendMessage( const xPL_MessageType type, const std::string& tgtVendor, const std::string& tgtDeviceID, 
+                const std::string& tgtInstanceID, const std::string& msgClass, const std::string& msgType, 
+                const xPLMessage::namedValueList& namedValues ) const;
 
-                      /** \brief Send a directed message to the xPL network. */
-    void sendMessage( const xPL_MessageType type, const string& VDI,
-                      const string& msgClass, const string& msgType, const xPLMessage::namedValueList& namedValues ) const;
+        /** \brief Send a directed message to the xPL network. */
+        void sendMessage( const xPL_MessageType type, const std::string& VDI,
+                const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues ) const;
 
-  private:
-    /** \brief Print via the logging facility the whole content of a xPL message. */
-    static void printXPLMessage( xPL_MessagePtr theMessage );
+    private:
+        /** \brief Print via the logging facility the whole content of a xPL message. */
+        static void printXPLMessage( xPL_MessagePtr theMessage );
 
-    /** \brief Handle an incomming xPL message. */
-    static void handleXPLMessage( xPL_MessagePtr theMessage, xPL_ObjectPtr userValue );
+        /** \brief Handle an incomming xPL message. */
+        void handleXPLMessage( xPL_MessagePtr theMessage);
 
-    xPL_ServicePtr xPLService;
-    string vendor;
-    string deviceID;
-    string instanceID;
-    boost::thread* m_thread;
+        /** \brief Handle an incomming xPL message. */
+        static void xpl_message_callback( xPL_MessagePtr theMessage, xPL_ObjectPtr userValue );
+
+        xPL_ServicePtr xPLService;
+        std::string vendor;
+        std::string deviceID;
+        std::string instanceID;
+        boost::thread* m_thread;
+        static int m_refcount;
+        bool m_exit_thread;
 };
 
 #endif // XPLHANDLER_H

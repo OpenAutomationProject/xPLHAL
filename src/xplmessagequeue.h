@@ -27,48 +27,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 
-using namespace std;
-
-extern "C" {
-#define COMMON_TYPES
-typedef bool Bool;
-typedef const char * String;
-//#include "../../../xPLLib/xPL.h"
-#include "xPL.h"
-}
-
-/**
- * \brief The C++ version of an xPL message
- */
-class xPLMessage
-{
-  public:
-  /** \brief Type that contains all name-value pairs of one xPL message. 
-    *  This type has to preserve the order of it's items and must support
-    *  multiple entries with the same key. So a map or multimap wan't sufficient.
-    */
-  typedef std::vector<std::pair<string,string> > namedValueList;
-
-  xPL_MessageType type;
-  string vendor;
-  string deviceID;
-  string instanceID;
-  string msgClass;
-  string msgType;
-  namedValueList namedValues;
-
-  xPLMessage(
-    const xPL_MessageType _type,
-    const string& _vendor,
-    const string& _deviceID,
-    const string& _instanceID,
-    const string& _msgClass,
-    const string& _msgType,
-    const namedValueList& _namedValues
-  ) : type(_type), vendor(_vendor), deviceID(_deviceID), instanceID(_instanceID),
-      msgClass(_msgClass), msgType(_msgType), namedValues(_namedValues) {}
-};
-typedef boost::shared_ptr<xPLMessage> xPLMessagePtr;
+#include "xplmessage.h"
 
 /**
  * Thread save store for xPL messages to send
@@ -78,7 +37,7 @@ class xPLMessageQueueClass
     /** \brief variable to ensure that the queue is thread save... */
     mutable boost::mutex queueLock;
     typedef boost::lock_guard<boost::mutex> lock_guard;
-    queue<xPLMessagePtr> xPLMessages;
+    std::queue<xPLMessagePtr> xPLMessages;
 
   public:
     /** \brief Add an message to the queue that'll be send on the next
