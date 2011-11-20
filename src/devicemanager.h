@@ -20,52 +20,65 @@
 #define DEVICEMANAGER_H
 
 #include <string>
+#include <map>
 
 // this is also including the xPL.h with its data structures:
 #include "xplhandler.h"
 
+class IxPLHandler;
+class IxPLCacheClass;
+
 #include "xplcache.h"
 #include "globals.h"
 #include "xpldevice.h"
+#include "i_devicemanager.h"
 
-class deviceManagerClass
+class deviceManagerClass: public IdeviceManagerClass
 {
-  public:
-    /** \brief Looks if the device deviceTag is known. */
-    bool contains( const std::string& deviceTag ) const
-    { return xPLCache->childNodes( "device." + deviceTag ).size() > 0; }
+    public:
+        deviceManagerClass(IxPLHandler* xplhandler, IxPLCacheClass* xplcache);
 
-    /** \brief Looks if the config configTag is known. */
-    bool containsConfig( const std::string& configTag ) const
-    { return xPLCache->childNodes( "config." + configTag ).size() > 0; }
+        /** \brief Looks if the device deviceTag is known. */
+        bool contains( const std::string& deviceTag ) const;
 
-    void add( const xPLDevice& device ) const;
-    bool remove( const std::string& deviceTag ) const;
-    bool removeConfig( const std::string& deviceTag ) const;
+        /** \brief Looks if the config configTag is known. */
+        bool containsConfig( const std::string& configTag ) const;
 
-    /** \brief Returns the device deviceTag when it's known or an empty device */
-    xPLDevice getDevice( const std::string& deviceTag ) const;
+        void add( const xPLDevice& device );
+        bool remove( const std::string& deviceTag );
+        bool removeConfig( const std::string& deviceTag ) const;
 
-    /** \brief Returns all known device names */
-    std::vector<std::string> getAllDeviceNames() const;
+        /** \brief Returns the device deviceTag when it's known or an empty device */
+        xPLDevice getDevice( const std::string& deviceTag ) const;
 
-    void update( const xPLDevice& device ) const;
+        /** \brief Returns all known device names */
+        std::vector<std::string> getAllDeviceNames() const;
 
-    /** \brief Handle the returned config list that someone (porbably we) have asked for */
-    void processConfigList     ( const xPL_MessagePtr message ) const;
+        /** \brief Handle the returned config list that someone (porbably we) have asked for */
+        void processConfigList     ( const xPL_MessagePtr message );
 
-    /** \brief Called when a new device poped up and is waiting to be configured */
-    void processConfigHeartBeat( const xPL_MessagePtr message ) const;
+        /** \brief Called when a new device poped up and is waiting to be configured */
+        void processConfigHeartBeat( const xPL_MessagePtr message );
 
-    /** \brief Called when a device sends its configuration */
-    void processCurrentConfig  ( const xPL_MessagePtr message ) const;
-    void processHeartbeat      ( const xPL_MessagePtr message ) const;
-    void processRemove         ( const xPL_MessagePtr message ) const;
+        /** \brief Called when a device sends its configuration */
+        void processCurrentConfig  ( const xPL_MessagePtr message );
+        void processHeartbeat      ( const xPL_MessagePtr message );
+        void processRemove         ( const xPL_MessagePtr message );
 
-    void sendConfigResponse( const std::string& source, const bool removeOldValue ) const;
-    
-    /** \brief A new configuration arrived via XHCP, handle it... */
-    bool storeNewConfig( const std::string& source, const std::string& config ) const;
+        void sendConfigResponse( const std::string& source, const bool removeOldValue );
+
+        /** \brief A new configuration arrived via XHCP, handle it... */
+        bool storeNewConfig( const std::string& source, const std::string& config );
+
+    private:
+        /*! \TODO: move to correct class, maybe xplMessage */
+        std::string extractSourceFromXplMessage( xPL_MessagePtr message );
+        boost::posix_time::ptime calculateExpireTime(int interval);
+        boost::posix_time::ptime calculateExpireTime(const char* string_interval, int *pInterval = 0);
+
+        IxPLHandler* m_xPL;
+        IxPLCacheClass*   m_xPLCache;
+        std::map<std::string, xPLDevice> mDeviceMap;
 };
 
 #endif // DEVICEMANAGER_H

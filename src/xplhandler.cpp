@@ -21,9 +21,10 @@
 using namespace boost::algorithm;
 
 #include "log.h"
-#include "devicemanager.h"
+#include "i_devicemanager.h"
 
 #include "xplhandler.h"
+#include "globals.h"
 
 /** Handle a change to the logger service configuration */
 /* static void configChangedHandler(xPL_ServicePtr theService, xPL_ObjectPtr userData) {
@@ -31,10 +32,13 @@ using namespace boost::algorithm;
 
 int xPLHandler::m_refcount = 0;
 
-xPLHandler::xPLHandler( const std::string& host_name )
-    : xPLService(0),
-    m_exit_thread(false),
-    vendor( "CHRISM" ), deviceID( "xplhalqt" ), instanceID( host_name )
+xPLHandler::xPLHandler( const std::string& host_name, IdeviceManagerClass* devManager )
+: xPLService(0)
+, m_exit_thread(false)
+, vendor( "CHRISM" )
+, deviceID( "xplhalqt" )
+, instanceID( host_name )
+, m_deviceManager(devManager)
 {
     writeLog( "xPLHandler::xPLHandler( "+host_name+" )", logLevel::debug );
     //xPL_setDebugging(TRUE);
@@ -98,6 +102,10 @@ xPLHandler::~xPLHandler()
     }
 }
 
+void xPLHandler::setDeviceManager(IdeviceManagerClass* devManager)
+{
+    m_deviceManager = devManager;
+}
 
 void xPLHandler::run()
 {
@@ -253,15 +261,15 @@ void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
         if(        "config.list"    == schema )
         {
             // someone (probably we) have asked for the config list - handle it now...
-            deviceManager->processConfigList( theMessage );
+            m_deviceManager->processConfigList( theMessage );
         } else if( "config.current" == schema )
         {
             // someone requested the device to send it's current configuration
-            deviceManager->processCurrentConfig( theMessage );
+            m_deviceManager->processCurrentConfig( theMessage );
         } else if( "config.app"     == schema || "config.basic" == schema )
         {
             // a new device poped up and wants to be configured
-            deviceManager->processConfigHeartBeat( theMessage );
+            m_deviceManager->processConfigHeartBeat( theMessage );
         } else if( "hbeat.basic"    == schema || "hbeat.app"    == schema )
         {
             /*
@@ -269,10 +277,10 @@ void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
                RaiseEvent AddtoCache("xplhal." & msgSource & ".alive", Now.ToString, False)
                End If
              */
-            deviceManager->processHeartbeat( theMessage );
+            m_deviceManager->processHeartbeat( theMessage );
         } else if( "hbeat.end"      == schema )
         {
-            deviceManager->processRemove( theMessage );
+            m_deviceManager->processRemove( theMessage );
         }
     }
 }

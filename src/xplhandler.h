@@ -27,20 +27,25 @@
 #include <boost/thread/locks.hpp>
 
 // this is also including the xPL.h
+#include "i_xplhandler.h"
 #include "xplmessagequeue.h"
+
+class IdeviceManagerClass;
 
 /**
  * \brief Handle all xPL communication.
  */
-class xPLHandler
+class xPLHandler: public IxPLHandler
 {
     /** \brief variable to ensure that the xPL library is only called at the same time... */
     //mutable boost::mutex xPLLock;
     //typedef boost::lock_guard<boost::mutex> lock_guard;
 
     public:
-        xPLHandler( const std::string& host_name );
+        xPLHandler( const std::string& host_name, IdeviceManagerClass* devManager = 0);
         ~xPLHandler();
+
+        void setDeviceManager(IdeviceManagerClass* devManager);
 
         void run();
 
@@ -73,6 +78,7 @@ class xPLHandler
         boost::thread* m_thread;
         static int m_refcount;
         bool m_exit_thread;
+        IdeviceManagerClass* m_deviceManager;
 };
 
 #endif // XPLHANDLER_H

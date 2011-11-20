@@ -14,15 +14,31 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#project(xPLHALTest)
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_CXX_FLAGS "-g -Os")
-set(xPLHALTest_SRCS test_test.cpp)
+include(CTest)
 
-add_executable(test_runner ${xPLHALTest_SRCS})
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+
+file(GLOB_RECURSE UnitTests_sources *.cpp)
+
+#set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplcache.cpp ../src/xplhandler.cpp ../src/xplmessagequeue.cpp)
+set(UnitTest_tsrc ../src/devicemanager.cpp)
+
+add_executable(test_runner ${UnitTests_sources} ${UnitTest_tsrc})
+
+include_directories(../src)
+
+enable_testing()
+
+set(CMAKE_CXX_FLAGS "-g -std=c++0x -fprofile-arcs -ftest-coverage")
+#set(xPLHALTest_SRCS test_test.cpp test_xplcache.cpp)
+#add_executable(test_runner ${xPLHALTest_SRCS})
 #message(STATUS "Boost_LIBRARIES=${Boost_LIBRARIES}")
 #message(STATUS "LIBRARIES=${LIBS}")
+#message(STATUS "SOURCE=${SOURCES}")
 #target_link_libraries(xPLHAL ${Boost_LIBRARIES} -dynamic xPL pthread -static)
-target_link_libraries(test_runner ${LIBS} boost_unit_test_framework-mt)
+target_link_libraries(test_runner ${LIBS})
+
+add_test(UnitTests test_runner)
 

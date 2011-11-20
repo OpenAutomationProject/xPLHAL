@@ -26,6 +26,7 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/regex.hpp>
+#include "i_xplcache.h"
 
 
 /** Helper function */
@@ -64,7 +65,7 @@ extern timeStreamHelper timeConverter;
  *
  * This class contains a std::map to stores xPL messages and the global variables.
  */
-class xPLCacheClass
+class xPLCacheClass: public IxPLCacheClass
 {
   protected:
     /**
