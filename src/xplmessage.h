@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef XPLMESSAGE_H
-#define XPLMESSAGE_H
 
 #include <vector>
 #include <string>
@@ -62,5 +60,3 @@ class xPLMessage
       msgClass(_msgClass), msgType(_msgType), namedValues(_namedValues) {}
 };
 typedef boost::shared_ptr<xPLMessage> xPLMessagePtr;
-
-#endif // XPLMESSAGEQUEUE_H

@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef XHCPTHREAD_H
-#define XHCPTHREAD_H
 
 #include <map>
 
@@ -87,5 +85,3 @@ class XHCPThread
 
     boost::thread m_thread;
 };
-
-#endif // XHCPTHREAD_H

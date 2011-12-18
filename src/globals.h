@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef GLOBALS_H
-#define GLOBALS_H
 
 #include "boost/filesystem.hpp"
 
@@ -44,5 +42,3 @@ extern boost::filesystem::path xPLHalRootFolder;
 extern boost::filesystem::path DataFileFolder;
 extern boost::filesystem::path ScriptEngineFolder;
 extern boost::filesystem::path rulesFolder;
-
-#endif // GLOBALS_H

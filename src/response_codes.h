@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef RESPONSE_CODES_H
-#define RESPONSE_CODES_H
 
 #include <map>
 #include <string>
@@ -108,4 +106,3 @@ class responseCodeBase
     std::string  operator()( int code ) { return std::string(codes[code]); }
 } static responseCode;
 
-#endif /* RESPONSE_CODES_H */

@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -16,9 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __XPLDEVICE_H__
-#define __XPLDEVICE_H__
-
 #include <string>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -36,5 +34,3 @@ struct xPLDevice
     bool                     Suspended;      /** \brief lost heartbeat                                                              */
     bool                     Current;        /** \brief asked for current                                                           */
 };
-
-#endif

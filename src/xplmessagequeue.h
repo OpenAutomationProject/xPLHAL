@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef XPLMESSAGEQUEUE_H
-#define XPLMESSAGEQUEUE_H
 
 #include <vector>
 #include <queue>
@@ -50,5 +48,3 @@ class xPLMessageQueueClass
         \returns Returns 0 if no message available or the message. */
     xPL_MessagePtr consume( const xPL_ServicePtr& service );
 };
-
-#endif // XPLMESSAGEQUEUE_H

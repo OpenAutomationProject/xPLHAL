@@ -21,7 +21,6 @@
 using namespace boost::algorithm;
 
 #include "log.h"
-#include "i_devicemanager.h"
 
 #include "xplhandler.h"
 #include "globals.h"
@@ -32,13 +31,12 @@ using namespace boost::algorithm;
 
 int xPLHandler::m_refcount = 0;
 
-xPLHandler::xPLHandler( const std::string& host_name, IdeviceManagerClass* devManager )
+xPLHandler::xPLHandler( const std::string& host_name)
 : xPLService(0)
 , m_exit_thread(false)
 , vendor( "CHRISM" )
 , deviceID( "xplhalqt" )
 , instanceID( host_name )
-, m_deviceManager(devManager)
 {
     writeLog( "xPLHandler::xPLHandler( "+host_name+" )", logLevel::debug );
     //xPL_setDebugging(TRUE);
@@ -102,11 +100,6 @@ xPLHandler::~xPLHandler()
     }
 }
 
-void xPLHandler::setDeviceManager(IdeviceManagerClass* devManager)
-{
-    m_deviceManager = devManager;
-}
-
 void xPLHandler::run()
 {
     writeLog( "xPLHandler::run()", logLevel::debug );
@@ -164,11 +157,9 @@ void xPLHandler::printXPLMessage( xPL_MessagePtr theMessage )
     std::string result;
 
     /* Source Info */
-    result += xPL_getSourceVendor(theMessage);
-    result += "-";
-    result += xPL_getSourceDeviceID(theMessage);
-    result +=  ".",
-           result += xPL_getSourceInstanceID(theMessage);
+    result += xPL_getSourceVendor(theMessage) + std::string("-");
+    result += xPL_getSourceDeviceID(theMessage) + std::string(".");
+    result += xPL_getSourceInstanceID(theMessage);
 
     result += " -> ";
     /* Handle various target types */
@@ -179,10 +170,8 @@ void xPLHandler::printXPLMessage( xPL_MessagePtr theMessage )
             result += "XPL-GROUP.";
             result += xPL_getTargetGroup(theMessage);
         } else {
-            result += xPL_getTargetVendor(theMessage);
-            result += "-";
-            result += xPL_getTargetDeviceID(theMessage);
-            result += ".";
+            result += xPL_getTargetVendor(theMessage) + std::string("-");
+            result += xPL_getTargetDeviceID(theMessage) + std::string(".");
             result += xPL_getTargetInstanceID(theMessage);
         }
     }
@@ -211,10 +200,8 @@ void xPLHandler::printXPLMessage( xPL_MessagePtr theMessage )
     result += "] ";
 
     /* Echo Schema Info */
-    result += xPL_getSchemaClass(theMessage);
-    result += ".";
-    result += xPL_getSchemaType(theMessage);
-    result += ": ";
+    result += xPL_getSchemaClass(theMessage) + std::string(".");
+    result += xPL_getSchemaType(theMessage) + std::string(": ");
 
     xPL_NameValueListPtr nvList = xPL_getMessageBody(theMessage);
     xPL_NameValuePairPtr nvPair = NULL;
@@ -251,36 +238,34 @@ void xPLHandler::xpl_message_callback( xPL_MessagePtr theMessage, void *userValu
 void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
 {
     printXPLMessage( theMessage );
-
-    //RaiseEvent ParseMessageForCache(e.XplMsg)
-    //RaiseEvent ParseMessageForRules(e.XplMsg)
-
-    std::string schema = xPL_getSchemaClass(theMessage) + std::string(".") + xPL_getSchemaType(theMessage);
-    if( xPL_getMessageType(theMessage) != xPL_MESSAGE_COMMAND )
-    {
-        if(        "config.list"    == schema )
-        {
-            // someone (probably we) have asked for the config list - handle it now...
-            m_deviceManager->processConfigList( theMessage );
-        } else if( "config.current" == schema )
-        {
-            // someone requested the device to send it's current configuration
-            m_deviceManager->processCurrentConfig( theMessage );
-        } else if( "config.app"     == schema || "config.basic" == schema )
-        {
-            // a new device poped up and wants to be configured
-            m_deviceManager->processConfigHeartBeat( theMessage );
-        } else if( "hbeat.basic"    == schema || "hbeat.app"    == schema )
-        {
-            /*
-               If msgSource = MySourceTag Then
-               RaiseEvent AddtoCache("xplhal." & msgSource & ".alive", Now.ToString, False)
-               End If
-             */
-            m_deviceManager->processHeartbeat( theMessage );
-        } else if( "hbeat.end"      == schema )
-        {
-            m_deviceManager->processRemove( theMessage );
+        
+    xPLMessage::namedValueList values; 
+    xPL_NameValueListPtr nvList = xPL_getMessageBody(theMessage);
+    xPL_NameValuePairPtr nvPair = NULL;
+    int nvIndex = 0;
+    int nvCount = xPL_getNamedValueCount(nvList);
+    /* Write Name/Value Pairs out */
+    for (nvIndex = 0; nvIndex < nvCount; nvIndex++) {
+        nvPair = xPL_getNamedValuePairAt(nvList, nvIndex);
+    
+        if (nvPair->itemValue != NULL) {
+            values.push_back( std::make_pair( nvPair->itemName, nvPair->itemValue ) );
         }
     }
+    xPLMessagePtr msg( new xPLMessage(    xPL_getMessageType(theMessage),
+                                          xPL_getSourceVendor(theMessage), 
+                                          xPL_getSourceDeviceID(theMessage),
+                                          xPL_getSourceInstanceID(theMessage),
+                                          xPL_getSchemaClass(theMessage),
+                                          xPL_getSchemaType(theMessage),
+                                          values) );
+
+    m_sigRceivedXplMessage(msg);
+
 }
+        
+boost::signals2::connection xPLHandler::connect(const signal_t::slot_type &subscriber)
+{
+    return m_sigRceivedXplMessage.connect(subscriber);
+}
+

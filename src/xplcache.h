@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef XPLCACHE_H
-#define XPLCACHE_H
 
 #include <string>
 #include <vector>
@@ -155,5 +153,3 @@ class xPLCacheClass: public IxPLCacheClass
     /** \brief Save object cache to file system */
     void saveCache( void ) const;
 };
-
-#endif // XPLCACHE_H

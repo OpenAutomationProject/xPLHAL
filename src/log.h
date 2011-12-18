@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -15,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef LOG_H
-#define LOG_H
 
 #include <iostream>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -119,5 +117,3 @@ class logBase
       doLog( m, level );
     }
 } static writeLog;
-
-#endif // LOG_H

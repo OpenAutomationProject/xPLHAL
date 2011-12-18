@@ -1,5 +1,4 @@
-#ifndef __I_PROPERTIES_H__
-#define __I_PROPERTIES_H__
+#pragma once
 
 //! \brief Properties Interface
 class IProperties
@@ -19,5 +18,3 @@ class IProperties
         /** \brief deletes property */
         virtual void deleteProperty(const std::string& name) = 0;
 };
-
-#endif

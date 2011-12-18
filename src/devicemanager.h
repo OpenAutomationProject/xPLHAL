@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -16,27 +17,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DEVICEMANAGER_H
-#define DEVICEMANAGER_H
-
 #include <string>
 #include <map>
 
-// this is also including the xPL.h with its data structures:
-#include "xplhandler.h"
-
-class IxPLHandler;
 class IxPLCacheClass;
 
+#include "xplhandler.h"
 #include "xplcache.h"
 #include "globals.h"
 #include "xpldevice.h"
-#include "i_devicemanager.h"
 
-class deviceManagerClass: public IdeviceManagerClass
+class deviceManagerClass
 {
     public:
-        deviceManagerClass(IxPLHandler* xplhandler, IxPLCacheClass* xplcache);
+        deviceManagerClass(IxPLCacheClass* xplcache);
+        
+        boost::signals2::connection connect(const xPLHandler::signal_t::slot_type &subscriber);
 
         /** \brief Looks if the device deviceTag is known. */
         bool contains( const std::string& deviceTag ) const;
@@ -54,16 +50,19 @@ class deviceManagerClass: public IdeviceManagerClass
         /** \brief Returns all known device names */
         std::vector<std::string> getAllDeviceNames() const;
 
+        /** \brief process incoming xpl messages and check if they are for us */
+        void processXplMessage( const xPLMessagePtr message );
+
         /** \brief Handle the returned config list that someone (porbably we) have asked for */
-        void processConfigList     ( const xPL_MessagePtr message );
+        void processConfigList     ( const xPLMessagePtr message );
 
         /** \brief Called when a new device poped up and is waiting to be configured */
-        void processConfigHeartBeat( const xPL_MessagePtr message );
+        void processConfigHeartBeat( const xPLMessagePtr message );
 
         /** \brief Called when a device sends its configuration */
-        void processCurrentConfig  ( const xPL_MessagePtr message );
-        void processHeartbeat      ( const xPL_MessagePtr message );
-        void processRemove         ( const xPL_MessagePtr message );
+        void processCurrentConfig  ( const xPLMessagePtr message );
+        void processHeartbeat      ( const xPLMessagePtr message );
+        void processRemove         ( const xPLMessagePtr message );
 
         void sendConfigResponse( const std::string& source, const bool removeOldValue );
 
@@ -73,12 +72,12 @@ class deviceManagerClass: public IdeviceManagerClass
     private:
         /*! \TODO: move to correct class, maybe xplMessage */
         std::string extractSourceFromXplMessage( xPL_MessagePtr message );
+        std::string extractSourceFromXplMessage( xPLMessagePtr message );
+
         boost::posix_time::ptime calculateExpireTime(int interval);
         boost::posix_time::ptime calculateExpireTime(const char* string_interval, int *pInterval = 0);
 
-        IxPLHandler* m_xPL;
         IxPLCacheClass*   m_xPLCache;
         std::map<std::string, xPLDevice> mDeviceMap;
+        xPLHandler::signal_t m_sigSendXplMessage;
 };
-
-#endif // DEVICEMANAGER_H

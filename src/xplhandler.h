@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -16,36 +17,32 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#ifndef XPLHANDLER_H
-#define XPLHANDLER_H
-
 #include <vector>
 #include <string>
 
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/signals2/signal.hpp>
 
 // this is also including the xPL.h
-#include "i_xplhandler.h"
 #include "xplmessagequeue.h"
-
-class IdeviceManagerClass;
 
 /**
  * \brief Handle all xPL communication.
  */
-class xPLHandler: public IxPLHandler
+class xPLHandler
 {
     /** \brief variable to ensure that the xPL library is only called at the same time... */
     //mutable boost::mutex xPLLock;
     //typedef boost::lock_guard<boost::mutex> lock_guard;
+    public:
+        typedef boost::signals2::signal<void (xPLMessagePtr)> signal_t;
 
     public:
-        xPLHandler( const std::string& host_name, IdeviceManagerClass* devManager = 0);
+        xPLHandler( const std::string& host_name);
         ~xPLHandler();
 
-        void setDeviceManager(IdeviceManagerClass* devManager);
+        boost::signals2::connection connect(const signal_t::slot_type &subscriber);
 
         void run();
 
@@ -78,7 +75,5 @@ class xPLHandler: public IxPLHandler
         boost::thread* m_thread;
         static int m_refcount;
         bool m_exit_thread;
-        IdeviceManagerClass* m_deviceManager;
+        signal_t m_sigRceivedXplMessage;
 };
-
-#endif // XPLHANDLER_H
