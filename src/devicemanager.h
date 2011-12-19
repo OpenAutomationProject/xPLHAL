@@ -32,8 +32,6 @@ class deviceManagerClass
     public:
         deviceManagerClass(IxPLCacheClass* xplcache);
         
-        boost::signals2::connection connect(const xPLHandler::signal_t::slot_type &subscriber);
-
         /** \brief Looks if the device deviceTag is known. */
         bool contains( const std::string& deviceTag ) const;
 
@@ -68,16 +66,12 @@ class deviceManagerClass
 
         /** \brief A new configuration arrived via XHCP, handle it... */
         bool storeNewConfig( const std::string& source, const std::string& config );
-
+        
+        xPLHandler::signal_t m_sigSendXplMessage;
     private:
-        /*! \TODO: move to correct class, maybe xplMessage */
-        std::string extractSourceFromXplMessage( xPL_MessagePtr message );
-        std::string extractSourceFromXplMessage( xPLMessagePtr message );
-
         boost::posix_time::ptime calculateExpireTime(int interval);
-        boost::posix_time::ptime calculateExpireTime(const char* string_interval, int *pInterval = 0);
+        boost::posix_time::ptime calculateExpireTime(const std::string& string_interval, int *pInterval = 0);
 
         IxPLCacheClass*   m_xPLCache;
         std::map<std::string, xPLDevice> mDeviceMap;
-        xPLHandler::signal_t m_sigSendXplMessage;
 };

@@ -152,83 +152,6 @@ void xPLHandler::sendMessage( const xPL_MessageType type, const std::string& VDI
     xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( type, vendor, device, instance, msgClass, msgType, namedValues ) ) );
 }
 
-void xPLHandler::printXPLMessage( xPL_MessagePtr theMessage )
-{
-    std::string result;
-
-    /* Source Info */
-    result += xPL_getSourceVendor(theMessage) + std::string("-");
-    result += xPL_getSourceDeviceID(theMessage) + std::string(".");
-    result += xPL_getSourceInstanceID(theMessage);
-
-    result += " -> ";
-    /* Handle various target types */
-    if (xPL_isBroadcastMessage(theMessage)) {
-        result += "*";
-    } else {
-        if (xPL_isGroupMessage(theMessage)) {
-            result += "XPL-GROUP.";
-            result += xPL_getTargetGroup(theMessage);
-        } else {
-            result += xPL_getTargetVendor(theMessage) + std::string("-");
-            result += xPL_getTargetDeviceID(theMessage) + std::string(".");
-            result += xPL_getTargetInstanceID(theMessage);
-        }
-    }
-
-    /* Print hop count */
-    result += " (";
-    result += lexical_cast<std::string>(xPL_getHopCount(theMessage));
-    result += " hops) ";
-
-    result += "[";
-    switch(xPL_getMessageType(theMessage)) 
-    {
-        case xPL_MESSAGE_COMMAND:
-            result += "xpl-cmnd";
-            break;
-        case xPL_MESSAGE_STATUS:
-            result += "xpl-stat";
-            break;
-        case xPL_MESSAGE_TRIGGER:
-            result += "xpl-trig";
-            break;
-        default:
-            result += "!UNKNOWN!";
-            break;
-    }
-    result += "] ";
-
-    /* Echo Schema Info */
-    result += xPL_getSchemaClass(theMessage) + std::string(".");
-    result += xPL_getSchemaType(theMessage) + std::string(": ");
-
-    xPL_NameValueListPtr nvList = xPL_getMessageBody(theMessage);
-    xPL_NameValuePairPtr nvPair = NULL;
-    int nvIndex = 0;
-    int nvCount = xPL_getNamedValueCount(nvList);
-    /* Write Name/Value Pairs out */
-    for (nvIndex = 0; nvIndex < nvCount; nvIndex++) {
-        nvPair = xPL_getNamedValuePairAt(nvList, nvIndex);
-        result += nvPair->itemName; //WRITE_TEXT(nvPair->itemName);
-        result += "="; //WRITE_TEXT("=");
-
-        /* Write data content out */
-        if (nvPair->itemValue != NULL) {
-            if (nvPair->isBinary) 
-                ;//writeBinaryValue(nvPair->itemValue, nvPair->binaryLength);
-            else
-                result += nvPair->itemValue; //WRITE_TEXT(nvPair->itemValue);
-        }
-
-        /* Terminate line/entry */
-        result += "\n"; //WRITE_TEXT("\n");
-    }
-    replace_all( result, "\n", ";" );
-
-    writeLog( result, logLevel::debug );
-}
-
 void xPLHandler::xpl_message_callback( xPL_MessagePtr theMessage, void *userValue )
 {
     xPLHandler* obj = static_cast<xPLHandler*>(userValue);
@@ -237,8 +160,6 @@ void xPLHandler::xpl_message_callback( xPL_MessagePtr theMessage, void *userValu
 
 void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
 {
-    printXPLMessage( theMessage );
-        
     xPLMessage::namedValueList values; 
     xPL_NameValueListPtr nvList = xPL_getMessageBody(theMessage);
     xPL_NameValuePairPtr nvPair = NULL;
@@ -260,12 +181,18 @@ void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
                                           xPL_getSchemaType(theMessage),
                                           values) );
 
+    msg->isBroadcastMessage = xPL_isBroadcastMessage(theMessage);
+    msg->isGroupMessage     = xPL_isGroupMessage(theMessage);
+    if (!msg->isBroadcastMessage) {
+        msg->targetVendor       = xPL_getTargetVendor(theMessage);
+        msg->targetDevice       = xPL_getTargetDeviceID(theMessage);
+        msg->targetInstance     = xPL_getTargetInstanceID(theMessage);
+    }
+    if (msg->isGroupMessage) {
+        msg->targetGroup        = xPL_getTargetGroup(theMessage);
+    }
+    
+    writeLog(msg->printXPLMessage(), logLevel::debug );
+
     m_sigRceivedXplMessage(msg);
-
 }
-        
-boost::signals2::connection xPLHandler::connect(const signal_t::slot_type &subscriber)
-{
-    return m_sigRceivedXplMessage.connect(subscriber);
-}
-

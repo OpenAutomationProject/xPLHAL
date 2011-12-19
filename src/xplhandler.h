@@ -42,8 +42,6 @@ class xPLHandler
         xPLHandler( const std::string& host_name);
         ~xPLHandler();
 
-        boost::signals2::connection connect(const signal_t::slot_type &subscriber);
-
         void run();
 
         /** \brief Broadcast one message to the xPL network. */
@@ -57,11 +55,11 @@ class xPLHandler
         /** \brief Send a directed message to the xPL network. */
         void sendMessage( const xPL_MessageType type, const std::string& VDI,
                 const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues ) const;
+        
+    public:
+        signal_t m_sigRceivedXplMessage;
 
     private:
-        /** \brief Print via the logging facility the whole content of a xPL message. */
-        static void printXPLMessage( xPL_MessagePtr theMessage );
-
         /** \brief Handle an incomming xPL message. */
         void handleXPLMessage( xPL_MessagePtr theMessage);
 
@@ -75,5 +73,4 @@ class xPLHandler
         boost::thread* m_thread;
         static int m_refcount;
         bool m_exit_thread;
-        signal_t m_sigRceivedXplMessage;
 };

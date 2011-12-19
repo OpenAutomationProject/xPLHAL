@@ -19,7 +19,7 @@ cmake_minimum_required(VERSION 2.6)
 
 #set(CMAKE_CXX_FLAGS "-g -O2 -std=c++0x")
 set(CMAKE_CXX_FLAGS "-g -Os -std=c++0x")
-set(xPLHAL_SRCS xplmessagequeue.cpp devicemanager.cpp xplhandler.cpp xplcache.cpp xhcpthread.cpp log.cpp xhcp.cpp main.cpp)
+set(xPLHAL_SRCS xplmessagequeue.cpp devicemanager.cpp xplhandler.cpp xplcache.cpp xhcpthread.cpp log.cpp xhcp.cpp xplmessage.cpp main.cpp)
 
 add_executable(xPLHAL ${xPLHAL_SRCS})
 #message(STATUS "Boost_LIBRARIES=${Boost_LIBRARIES}")

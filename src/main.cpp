@@ -108,7 +108,8 @@ int main(int UNUSED argc, char** UNUSED argv)
     XHCPServer *xhcpServer = new XHCPServer();
     xPL = new xPLHandler( boost::asio::ip::host_name() ); //xPL->start();
     deviceManager = new deviceManagerClass(xPLCache);
-    xPL->connect(boost::bind(&deviceManagerClass::processXplMessage, deviceManager, _1));
+    deviceManager->m_sigSendXplMessage.connect(boost::bind(&xPLMessageQueueClass::add, xPLMessageQueue, _1));
+    xPL->m_sigRceivedXplMessage.connect(boost::bind(&deviceManagerClass::processXplMessage, deviceManager, _1));
     writeLog( "started", logLevel::all );
 
     // force everyone to send their configuration so that we start up to date...

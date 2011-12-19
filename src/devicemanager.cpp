@@ -15,8 +15,6 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 #include <cstdio>
@@ -125,16 +123,14 @@ void deviceManagerClass::processXplMessage( const xPLMessagePtr message )
 
 void deviceManagerClass::processConfigList( const xPLMessagePtr message ) 
 {
-    std::string source = extractSourceFromXplMessage(message);
+    std::string source = message->getSourceVDI();
     xPLDevice device = getDevice( source );
     writeLog( "deviceManagerClass::processConfigList("+source+") - found ["+device.VDI+"]", logLevel::debug );
     if( "" == device.VDI ) {
         // A config list turned up that we haven't asked for...
         // create a new device...
         int interval = 5;
-        //\TODO: implement xPL_getMessageNamedValue
-//        ptime expires = calculateExpireTime(xPL_getMessageNamedValue(message, "interval"), &interval);
-        ptime expires = calculateExpireTime("5", &interval);
+        ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
         device.VDI            = source;        // vendor / device / instance = unique id
         device.ConfigDone     = false;         // false = new waiting check, true = sent/not required
         device.ConfigMissing  = false;         // true = no config file, no response from device, false = have/waiting config
@@ -178,18 +174,16 @@ void deviceManagerClass::processConfigList( const xPLMessagePtr message )
         // try to get at least the current config
         xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
         xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_COMMAND,
-                                          message->vendor,
-                                          message->deviceID,
-                                          message->instanceID,
+                                          source,
                                           "config", "current",
                                           command_request) );
         m_sigSendXplMessage(msg);
     }
 }
 
-ptime deviceManagerClass::calculateExpireTime(const char* string_interval, int *pInterval)
+ptime deviceManagerClass::calculateExpireTime(const std::string& string_interval, int *pInterval)
 {
-    int interval = string_interval ? atoi(string_interval) : 5; // default to 5 minutes
+    int interval = string_interval.empty() ? atoi(string_interval.c_str()) : 5; // default to 5 minutes
     if (pInterval) {
         *pInterval = interval;
     }
@@ -203,7 +197,7 @@ ptime deviceManagerClass::calculateExpireTime(int interval)
 
 void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
 {
-    std::string source = extractSourceFromXplMessage(message);
+    std::string source = message->getSourceVDI();
 
     xPLDevice device = getDevice( source );
     writeLog( "deviceManagerClass::processConfigHeartBeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
@@ -211,9 +205,7 @@ void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
         // this handles a new application that identifies itself with a hbeat straight away.
         // it must either be storing it's config locally, can't be configured, or is configured somewhere else.
         int interval = 5;
-        //\TODO
-//        ptime expires = calculateExpireTime(xPL_getMessageNamedValue(message, "interval"), &interval);
-        ptime expires = calculateExpireTime("5", &interval);
+        ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
         device.VDI            = source;       // vendor / device / instance = unique id
         device.ConfigDone     = false;        // false = new waiting check, true = sent/not required
         device.ConfigMissing  = true;         // true = no config file, no response from device, false = have/waiting config
@@ -237,9 +229,7 @@ void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
     if( !device.ConfigListSent ) {
         xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
         xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_COMMAND,
-                                          message->vendor,
-                                          message->deviceID,
-                                          message->instanceID,
+                                          source,
                                           "config", "list",
                                           command_request) );
         m_sigSendXplMessage(msg);
@@ -249,7 +239,7 @@ void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
 
 void deviceManagerClass::processCurrentConfig( const xPLMessagePtr message )
 {
-    std::string source = extractSourceFromXplMessage(message);
+    std::string source = message->getSourceVDI();
     xPLDevice device = getDevice( source );
     writeLog( "deviceManagerClass::processCurrentConfig("+source+") - found ["+device.VDI+"]", logLevel::debug );
     if( "" == device.VDI ) {
@@ -286,29 +276,13 @@ void deviceManagerClass::processCurrentConfig( const xPLMessagePtr message )
     }
 }
 
-std::string deviceManagerClass::extractSourceFromXplMessage( xPL_MessagePtr message )
-{
-    return std::string(xPL_getSourceVendor(message)) + "-"
-           + xPL_getSourceDeviceID  ( message ) + "."
-           + xPL_getSourceInstanceID( message );
-}
-
-std::string deviceManagerClass::extractSourceFromXplMessage( xPLMessagePtr message )
-{
-    return std::string(message->vendor + "-"
-           + message->deviceID + "."
-           + message->instanceID);
-}
-
 void deviceManagerClass::processHeartbeat( xPLMessagePtr message )
 {
-    std::string source = extractSourceFromXplMessage(message);
+    std::string source = message->getSourceVDI();
 
     xPLDevice device = getDevice( source );
     int interval = 5;
-    //\TODO
-//    ptime expires = calculateExpireTime(xPL_getMessageNamedValue(message, "interval"), &interval);
-    ptime expires = calculateExpireTime("5", &interval);
+    ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
     writeLog( "deviceManagerClass::processHeartbeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
 
     if( "" == device.VDI ) {
@@ -330,9 +304,7 @@ void deviceManagerClass::processHeartbeat( xPLMessagePtr message )
         // Throw it a config request anyway, see what turns up..
         xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
         xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_COMMAND,
-                                          message->vendor,
-                                          message->deviceID,
-                                          message->instanceID,
+                                          source,
                                           "config", "list",
                                           command_request) );
         m_sigSendXplMessage(msg);
@@ -349,7 +321,7 @@ void deviceManagerClass::processHeartbeat( xPLMessagePtr message )
 
 void deviceManagerClass::processRemove( xPLMessagePtr message )
 {
-    std::string source = extractSourceFromXplMessage(message);
+    std::string source = message->getSourceVDI();
 
     remove( source );
     removeConfig( source );
@@ -371,15 +343,8 @@ void deviceManagerClass::sendConfigResponse( const std::string& source, const bo
     }
 
     if( list.size() > 0 ) {
-        size_t marker1 = source.find( "-" );
-        size_t marker2 = source.find( "." );
-        std::string vendor   = source.substr( 0, marker1 );
-        std::string device   = source.substr( marker1+1, marker2 - (marker1+1) );
-        std::string instance = source.substr( marker2+1 );
         xPLMessagePtr msg(  new xPLMessage(xPL_MESSAGE_COMMAND,
-                            vendor,
-                            device,
-                            instance,
+                            source,
                             "config", "response",
                             list) );
         m_sigSendXplMessage(msg);
@@ -442,7 +407,3 @@ bool deviceManagerClass::containsConfig( const std::string& configTag ) const
     return m_xPLCache->childNodes( "config." + configTag ).size() > 0; 
 }
 
-boost::signals2::connection deviceManagerClass::connect(const xPLHandler::signal_t::slot_type &subscriber)
-{
-    return m_sigSendXplMessage.connect(subscriber);
-}

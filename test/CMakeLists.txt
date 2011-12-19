@@ -23,11 +23,11 @@ find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 file(GLOB_RECURSE UnitTests_sources *.cpp)
 
 #set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplcache.cpp ../src/xplhandler.cpp ../src/xplmessagequeue.cpp)
-set(UnitTest_tsrc ../src/devicemanager.cpp)
+set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplmessage.cpp)
 
 add_executable(test_runner ${UnitTests_sources} ${UnitTest_tsrc})
 
-include_directories(../src)
+include_directories(../src /usr/local/include)
 
 enable_testing()
 
@@ -38,7 +38,7 @@ set(CMAKE_CXX_FLAGS "-g -std=c++0x -fprofile-arcs -ftest-coverage")
 #message(STATUS "LIBRARIES=${LIBS}")
 #message(STATUS "SOURCE=${SOURCES}")
 #target_link_libraries(xPLHAL ${Boost_LIBRARIES} -dynamic xPL pthread -static)
-target_link_libraries(test_runner ${LIBS})
+target_link_libraries(test_runner ${LIBS} mockpp)
 
 add_test(UnitTests test_runner)
 

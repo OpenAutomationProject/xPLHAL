@@ -1,9 +1,12 @@
 #include "../src/devicemanager.h"
 #define BOOST_TEST_MODULE "DeviceManager"
 #include <boost/test/unit_test.hpp>
+//#include "mock_xplhandler.h"
 
 //#include "xplcache.h"
 #include "devicemanager.h"
+
+#include <boost/regex.hpp>
 
 // load globas and give them their space to live
 //#include "globals.h"
@@ -17,6 +20,7 @@ path rulesFolder;
 #endif
 
 
+#if 0
 class MockXplHandler: public IxPLHandler
 {
     public:
@@ -43,6 +47,7 @@ class MockXplHandler: public IxPLHandler
             std::cerr << std::endl;
         }
 };
+#endif
 
 class MockXplCache: public IxPLCacheClass
 {
@@ -83,10 +88,26 @@ class MockXplCache: public IxPLCacheClass
     virtual void saveCache( void ) const { }
 };
 
+class MockSignalReceiver
+{
+    public:
+        void handleSignal(const xPLMessagePtr message) 
+        {
+            std::cout << "received signal" << *message << std::endl;
+        }
+};
+
 BOOST_AUTO_TEST_SUITE(DeviceManagerSuite);
 
 BOOST_AUTO_TEST_CASE( add_device )
 {
+    xPLMessage::namedValueList values; 
+    values.push_back( std::make_pair( "tag", "value" ) );
+    xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_TRIGGER,
+                                      "pnxs", "hs485", "default1",
+                                      "blah", "blub",
+                                      values) );
+#if 0
     xPL_MessagePtr msg = new xPL_Message;
     msg->messageType = xPL_MESSAGE_TRIGGER;
     msg->hopCount = 0;
@@ -103,18 +124,73 @@ BOOST_AUTO_TEST_CASE( add_device )
     msg->schemaClass = "blah";
     msg->schemaType = "blub";
     xPL_addMessageNamedValue(msg, "tag", "value");
+#endif
 
-    MockXplHandler mockHandler;
+//    MockXplHandler mockHandler;
     MockXplCache mockCache;
 
-    deviceManagerClass dm(&mockHandler, &mockCache);
+    deviceManagerClass dm(&mockCache);
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == false);
     dm.processHeartbeat(msg);
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == true);
 }
 
+#define m2s(match, group) std::string(match[group].first, match[group].second)
+
+//xPL_MessagePtr createXplMessage(const char* srcVDI, const char* dstVDI, const char* schema, std::map<std::string, std::string> tags)
+xPL_MessagePtr createXplMessage(xPL_MessageType msgType, const std::string& srcVDI, const std::string& dstVDI, const char* schema)
+{
+    std::string regex = R"(^([\w\d]+)-([\w\d]+)\.([\w\d]+)$)";
+    xPL_MessagePtr msg = new xPL_Message;
+    msg->messageType = msgType;
+    msg->hopCount = 0;
+    msg->receivedMessage = TRUE; /* TRUE if received, FALSE if being sent */
+    msg->isGroupMessage = FALSE;
+    msg->groupName = 0;
+    msg->isBroadcastMessage = TRUE;
+    msg->schemaClass = "blah";
+    msg->schemaType = "blub";
+//    xPL_addMessageNamedValue(msg, "tag", "value");
+
+    
+    boost::regex re_vdi(regex);
+    boost::smatch match;
+    if( ! boost::regex_match(srcVDI, match, re_vdi) ) {
+        delete msg;
+        return 0;
+    }
+    msg->sourceVendor = m2s(match, 1).c_str();
+    msg->sourceDeviceID = m2s(match, 2).c_str();
+    msg->sourceInstanceID = m2s(match, 3).c_str();
+
+    if( dstVDI == "*") {
+        msg->targetVendor = "*";
+        msg->targetDeviceID = "";
+        msg->targetInstanceID = "";
+    }
+    else {
+        if( ! boost::regex_match(dstVDI, match, re_vdi) ) {
+            delete msg;
+            return 0;
+        }
+    }
+    msg->targetVendor = m2s(match, 1).c_str();
+    msg->targetDeviceID = m2s(match, 2).c_str();
+    msg->targetInstanceID = m2s(match, 3).c_str();
+
+    return 0;
+}
+
 BOOST_AUTO_TEST_CASE( remove_device )
 {
+//    xPL_MessagePtr mymsg = createXplMessage(xPL_MESSAGE_TRIGGER, "pnxs-hs485.default1", "*", "blah.blub");
+    xPLMessage::namedValueList values; 
+    values.push_back( std::make_pair( "tag", "value" ) );
+    xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_TRIGGER,
+                                      "pnxs", "hs485", "default1",
+                                      "blah", "blub",
+                                      values) );
+#if 0
     xPL_MessagePtr msg = new xPL_Message;
     msg->messageType = xPL_MESSAGE_TRIGGER;
     msg->hopCount = 0;
@@ -131,17 +207,27 @@ BOOST_AUTO_TEST_CASE( remove_device )
     msg->schemaClass = "blah";
     msg->schemaType = "blub";
     xPL_addMessageNamedValue(msg, "tag", "value");
+#endif
 
-    MockXplHandler mockHandler;
+//    MockXplHandler mockHandler;
     MockXplCache mockCache;
+    MockSignalReceiver sigrecv;
 
-    deviceManagerClass dm(&mockHandler, &mockCache);
+//    xPLMessage::namedValueList nvl;
+//    mockHandler.sendMessage(xPL_MESSAGE_COMMAND, "pnxs", "hs485", "default1", "config", "list", nvl);
+//    mockHandler.activate();
+
+    deviceManagerClass dm(&mockCache);
+    dm.m_sigSendXplMessage.connect(boost::bind(&MockSignalReceiver::handleSignal, &sigrecv, _1));
+
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == false);
     dm.processHeartbeat(msg);
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == true);
 
     dm.processRemove(msg);
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == false);
+
+    //mockHandler.verify();
 }
 
 BOOST_AUTO_TEST_SUITE_END();
