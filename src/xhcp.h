@@ -18,7 +18,7 @@
 */
 
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 
 #include "xplcache.h"
 #include "xhcpthread.h"
@@ -29,18 +29,21 @@
  */
 class XHCPServer
 {
-  boost::asio::io_service io_service;
-  boost::asio::ip::tcp::tcp::acceptor acceptor;
-  volatile bool m_stoprequested;
-  boost::thread m_thread;
+  //volatile bool m_stoprequested;
+  //boost::thread m_thread;
 
   public:
-    XHCPServer();
+    XHCPServer(boost::asio::io_service& io);
     ~XHCPServer();
 
   protected:
     /** \brief Create a new XHCPThread for a new connection. */
-    void waitForConnection( void );
+
+//    void waitForConnection( void );
     void handleAccept(socket_ptr sockPtr);
     void startAccept();
+
+  private:
+    boost::asio::io_service& m_io;
+    boost::asio::ip::tcp::tcp::acceptor m_acceptor;
 };

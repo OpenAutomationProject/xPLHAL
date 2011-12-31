@@ -1,3 +1,4 @@
+#pragma once
 /*
     xPLHAL implementation in C++
     Copyright (C) 2009 by Christian Mayer - xpl at ChristianMayer dot de
@@ -16,35 +17,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "log.h"
-#include "xhcpthread.h"
+#include <boost/asio.hpp>
 
-#include "xhcp.h"
-
-using boost::asio::ip::tcp;
-
-XHCPServer::XHCPServer(boost::asio::io_service& io)
-:m_io(io)
-,m_acceptor(io, tcp::endpoint(tcp::v4(), 3865))
+class RecurringTimer
 {
-    startAccept();
-}
+    public:
+        RecurringTimer(boost::asio::io_service& io_service, const boost::asio::deadline_timer::duration_type& expiry_time, bool startTimer = false);
+        ~RecurringTimer();
 
-XHCPServer::~XHCPServer()    
-{
-    m_acceptor.cancel();
-    m_acceptor.close();
-}
+        void setExpireHandler(void (*handler)(const boost::system::error_code& e));
 
-void XHCPServer::startAccept()
-{
-    socket_ptr sockPtr(new tcp::socket(m_io));
-    m_acceptor.async_accept(*sockPtr, boost::bind(&XHCPServer::handleAccept, this, sockPtr));
-}
+        void start();
+        void stop();
 
-void XHCPServer::handleAccept(socket_ptr sockPtr)
-{
-    startAccept();
-    XHCPThread* foo = new XHCPThread( sockPtr );
-}
+    private:
+        void onExpire(const boost::system::error_code& e);
+
+        const boost::asio::deadline_timer::duration_type m_delay;
+        bool m_running;
+        boost::asio::deadline_timer m_timer; 
+        void (*m_expireFunc)(const boost::system::error_code&);
+};
 

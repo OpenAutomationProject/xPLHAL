@@ -15,12 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 #include <signal.h>
 #include "log.h"
 #include "xplcache.h"
 #include "devicemanager.h"
 #include "xhcp.h"
+#include "recurring_timer.h"
 
 // load globas and give them their space to live
 #include "globals.h"
@@ -35,18 +35,15 @@ xPLCacheClass *xPLCache;
 deviceManagerClass *deviceManager;
 xPLHandler *xPL;
 xPLMessageQueueClass *xPLMessageQueue;
-
-static boost::condition_variable g_exit_condition;
-static boost::mutex g_exit_mutex;
-static bool g_exit = false;
+        
+static boost::asio::io_service* g_ioservice = nullptr;
 
 void handle_signal(int signal)
 {
     if (signal == SIGINT || signal == SIGTERM) {
-        g_exit_mutex.lock();
-        g_exit = true;
-        g_exit_condition.notify_one();
-        g_exit_mutex.unlock();
+        if (g_ioservice) {
+            g_ioservice->stop();
+        }
     }
 }
 
@@ -102,10 +99,13 @@ int main(int UNUSED argc, char** UNUSED argv)
             return -1;
         }
     }
+    
+    boost::asio::io_service io;
+    g_ioservice = &io;
 
     xPLMessageQueue = new xPLMessageQueueClass;
     xPLCache = new xPLCacheClass;
-    XHCPServer *xhcpServer = new XHCPServer();
+    XHCPServer *xhcpServer = new XHCPServer(io);
     xPL = new xPLHandler( boost::asio::ip::host_name() ); //xPL->start();
     deviceManager = new deviceManagerClass(xPLCache);
     deviceManager->m_sigSendXplMessage.connect(boost::bind(&xPLMessageQueueClass::add, xPLMessageQueue, _1));
@@ -115,33 +115,22 @@ int main(int UNUSED argc, char** UNUSED argv)
     // force everyone to send their configuration so that we start up to date...
     xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
     xPL->sendBroadcastMessage( "config", "list", command_request );
+  
+    RecurringTimer timer_listAllObjects(io, boost::posix_time::seconds(60), true);
+    timer_listAllObjects.setExpireHandler([](const boost::system::error_code& e) {
+        writeLog( "main: <tick>", logLevel::all );
+        writeLog( "xPLCache:\n" + xPLCache->listAllObjects(), logLevel::debug );
+    });
+    
+    RecurringTimer timer_flushExpiredEntries(io, boost::posix_time::minutes(5), true);
+    timer_flushExpiredEntries.setExpireHandler([](const boost::system::error_code& e) {
+        writeLog( "main: flush cache", logLevel::all );
+        xPLCache->flushExpiredEntries(); // flush cache
+    });
 
-    // main loop
-    for( int count = 0;; ++count )
-    {
-        {
-            boost::mutex::scoped_lock lock(g_exit_mutex);
-            if (g_exit) break;
-            boost::system_time const wait_until = boost::get_system_time() + boost::posix_time::seconds(10);
-            g_exit_condition.timed_wait(lock, wait_until);
-            if (g_exit) break;
-        }
-       
-        writeLog( "main: run events", logLevel::all ); // run events
+    io.run();
+    g_ioservice = nullptr;
 
-        if( 0 == count%6 )
-        {
-            writeLog( "main: <tick>", logLevel::all );
-            writeLog( "xPLCache:\n" + xPLCache->listAllObjects(), logLevel::debug );
-        }
-        if( 30 == count ) // every 5 minutes
-        {
-            writeLog( "main: flush cache", logLevel::all );
-            xPLCache->flushExpiredEntries(); // flush cache
-            count = 0;
-        }
-    }
-        
     writeLog( "main: shutdown xPLHal", logLevel::all );
 
     // clean up
