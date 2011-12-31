@@ -172,11 +172,10 @@ void deviceManagerClass::processConfigList( const xPLMessagePtr message )
     } 
     else {
         // try to get at least the current config
-        xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
         xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_COMMAND,
                                           source,
                                           "config", "current",
-                                          command_request) );
+                                          {{"command", "request"}}) );
         m_sigSendXplMessage(msg);
     }
 }
@@ -227,11 +226,10 @@ void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
 
     // ask device for configuration (if haven't asked it before...)
     if( !device.ConfigListSent ) {
-        xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
         xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_COMMAND,
                                           source,
                                           "config", "list",
-                                          command_request) );
+                                          {{"command", "request"}}));
         m_sigSendXplMessage(msg);
         mDeviceMap[device.VDI].ConfigListSent = true;
     }
@@ -302,11 +300,10 @@ void deviceManagerClass::processHeartbeat( xPLMessagePtr message )
         mDeviceMap[device.VDI] = device;
 
         // Throw it a config request anyway, see what turns up..
-        xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
         xPLMessagePtr msg( new xPLMessage(xPL_MESSAGE_COMMAND,
                                           source,
                                           "config", "list",
-                                          command_request) );
+                                          {{"command", "request"}} ));
         m_sigSendXplMessage(msg);
         /* // that code below was from the VB - but we don't need it as processConfigList will
         // itself send the config.current request...

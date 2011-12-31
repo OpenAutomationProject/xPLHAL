@@ -57,11 +57,17 @@ bool xPLMessage::setSourceFromVDI(const std::string& source)
 
 bool xPLMessage::setTargetFromVDI(const std::string& target)
 {
-    size_t marker1 = target.find( "-" );
-    size_t marker2 = target.find( "." );
-    targetVendor   = target.substr( 0, marker1 );
-    targetDevice   = target.substr( marker1+1, marker2 - (marker1+1) );
-    targetInstance = target.substr( marker2+1 );
+    if (target == "*") {
+        isBroadcastMessage = true;
+    }
+    else {
+        isBroadcastMessage = false;
+        size_t marker1 = target.find( "-" );
+        size_t marker2 = target.find( "." );
+        targetVendor   = target.substr( 0, marker1 );
+        targetDevice   = target.substr( marker1+1, marker2 - (marker1+1) );
+        targetInstance = target.substr( marker2+1 );
+    }
 
     return true;
 }
@@ -109,6 +115,30 @@ std::string xPLMessage::printXPLMessage() const
     result += ">";
 
     return result;
+}
+        
+bool xPLMessage::operator==(const xPLMessage& right) const
+{
+    if (type != right.type) return false;
+    if (vendor != right.vendor) return false;
+    if (deviceID != right.deviceID) return false;
+    if (instanceID != right.instanceID) return false;
+    if (msgClass != right.msgClass) return false;
+    if (msgType != right.msgType) return false;
+    if (namedValues != right.namedValues) return false;
+    if (isBroadcastMessage != right.isBroadcastMessage) return false;
+    if (isGroupMessage != right.isGroupMessage) return false;
+    if (targetVendor != right.targetVendor) return false;
+    if (targetDevice != right.targetDevice) return false;
+    if (targetInstance != right.targetInstance) return false;
+    if (targetGroup != right.targetGroup) return false;
+    if (hopcount != right.hopcount) return false;
+    return true;
+}
+        
+xPLMessage::operator std::string() const
+{
+    return printXPLMessage();
 }
 
 std::ostream& operator<<(std::ostream& os, const xPLMessage& msg)

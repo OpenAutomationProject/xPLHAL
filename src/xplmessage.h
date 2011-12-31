@@ -59,6 +59,9 @@ class xPLMessage
         std::string targetGroup;
 
         int hopcount;
+        
+        xPLMessage() : hopcount(0), isBroadcastMessage(true), isGroupMessage(false)
+        {}
 
         xPLMessage(
                 const xPL_MessageType _type,
@@ -69,7 +72,8 @@ class xPLMessage
                 const std::string& _msgType,
                 const namedValueList& _namedValues
                 ) : type(_type), vendor(_vendor), deviceID(_deviceID), instanceID(_instanceID),
-                    msgClass(_msgClass), msgType(_msgType), namedValues(_namedValues) 
+                    msgClass(_msgClass), msgType(_msgType), namedValues(_namedValues),
+                    hopcount(0), isBroadcastMessage(true), isGroupMessage(false)
         {
         }
 
@@ -79,7 +83,8 @@ class xPLMessage
                 const std::string& _msgClass,
                 const std::string& _msgType,
                 const namedValueList& _namedValues
-                ) : type(_type), msgClass(_msgClass), msgType(_msgType), namedValues(_namedValues) 
+                ) : type(_type), msgClass(_msgClass), msgType(_msgType), namedValues(_namedValues), 
+                    hopcount(0), isBroadcastMessage(true), isGroupMessage(false)
         {
             setSourceFromVDI(_vdi);
         }
@@ -93,6 +98,9 @@ class xPLMessage
         bool setTargetFromVDI(const std::string& vdi);
         
         std::string getNamedValue(const std::string& tag) const;
+
+        operator std::string() const;
+        bool operator==(const xPLMessage& right) const;
 };
 typedef boost::shared_ptr<xPLMessage> xPLMessagePtr;
 
