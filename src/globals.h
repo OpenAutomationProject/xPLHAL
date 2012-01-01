@@ -28,9 +28,6 @@
 class xPLCacheClass;
 extern xPLCacheClass *xPLCache;
 
-class deviceManagerClass;
-extern deviceManagerClass *deviceManager;
-
 class xPLHandler;
 extern xPLHandler *xPL;
 

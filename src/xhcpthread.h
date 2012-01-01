@@ -23,10 +23,11 @@
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 
-
 #include "xplcache.h"
 
 typedef boost::shared_ptr<boost::asio::ip::tcp::tcp::socket> socket_ptr;
+
+class DeviceManager;
 
 /**
  * \brief Single connection to an xPLHAL Manager.
@@ -41,9 +42,10 @@ class XHCPThread
     const std::string tab;
     const std::string newLine;
     const std::string endMultiLine;
+    DeviceManager* m_deviceManager;
 
   public:
-    XHCPThread( socket_ptr socket );
+    XHCPThread( socket_ptr socket, DeviceManager* dm );
     ~XHCPThread();
 
     /** \brief The main loop of the thread. */

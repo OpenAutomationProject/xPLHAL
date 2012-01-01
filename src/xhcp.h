@@ -33,7 +33,7 @@ class XHCPServer
   //boost::thread m_thread;
 
   public:
-    XHCPServer(boost::asio::io_service& io);
+    XHCPServer(boost::asio::io_service& io, DeviceManager* dm);
     ~XHCPServer();
 
   protected:
@@ -46,4 +46,5 @@ class XHCPServer
   private:
     boost::asio::io_service& m_io;
     boost::asio::ip::tcp::tcp::acceptor m_acceptor;
+    DeviceManager* m_dm;
 };

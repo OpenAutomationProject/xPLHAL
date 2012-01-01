@@ -23,9 +23,10 @@
 
 using boost::asio::ip::tcp;
 
-XHCPServer::XHCPServer(boost::asio::io_service& io)
+XHCPServer::XHCPServer(boost::asio::io_service& io, DeviceManager* dm)
 :m_io(io)
 ,m_acceptor(io, tcp::endpoint(tcp::v4(), 3865))
+,m_dm(dm)
 {
     startAccept();
 }
@@ -45,6 +46,6 @@ void XHCPServer::startAccept()
 void XHCPServer::handleAccept(socket_ptr sockPtr)
 {
     startAccept();
-    XHCPThread* foo = new XHCPThread( sockPtr );
+    XHCPThread* foo = new XHCPThread(sockPtr, m_dm);
 }
 

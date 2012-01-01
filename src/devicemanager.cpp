@@ -19,23 +19,31 @@
 #include <boost/regex.hpp>
 #include <cstdio>
 
-using namespace boost::algorithm;
+using boost::algorithm::to_lower;
+using boost::algorithm::split;
+using boost::algorithm::is_any_of;
+using boost::algorithm::token_compress_on;
 
 #include "log.h"
 #include "devicemanager.h"
 #include "i_xplcache.h"
 
-using namespace boost::posix_time;
+using boost::posix_time::ptime;
+using boost::posix_time::second_clock;
+using boost::posix_time::minutes;
 
-deviceManagerClass::deviceManagerClass(IxPLCacheClass* xplcache)
+using std::string;
+using std::vector;
+
+DeviceManager::DeviceManager(IxPLCacheClass* xplcache)
 :m_xPLCache(xplcache)
 {
 }
 
 
-void deviceManagerClass::add( const xPLDevice& device )
+void DeviceManager::add( const xPLDevice& device )
 {
-    writeLog("deviceManagerClass::add(" + device.VDI + ")", logLevel::debug);
+    writeLog("DeviceManager::add(" + device.VDI + ")", logLevel::debug);
     if (contains( device.VDI )) {
         mDeviceMap[device.VDI] = device;
     } else {
@@ -44,9 +52,9 @@ void deviceManagerClass::add( const xPLDevice& device )
     }
 }
 
-bool deviceManagerClass::remove( const std::string& deviceTag )
+bool DeviceManager::remove( const string& deviceTag )
 {
-    writeLog( "deviceManagerClass::remove("+deviceTag+")", logLevel::debug );
+    writeLog( "DeviceManager::remove("+deviceTag+")", logLevel::debug );
     auto device = mDeviceMap.find(deviceTag);
     if (device != mDeviceMap.end()) {
         mDeviceMap.erase(device);
@@ -55,11 +63,11 @@ bool deviceManagerClass::remove( const std::string& deviceTag )
     return false;
 }
 
-bool deviceManagerClass::removeConfig( const std::string& deviceTag ) const
+bool DeviceManager::removeConfig( const string& deviceTag ) const
 {
-    writeLog( "deviceManagerClass::remove("+deviceTag+")", logLevel::debug );
+    writeLog( "DeviceManager::remove("+deviceTag+")", logLevel::debug );
     if( containsConfig( deviceTag ) ) {
-        std::vector<std::string> list = m_xPLCache->childNodes( "config." + deviceTag );
+        vector<string> list = m_xPLCache->childNodes( "config." + deviceTag );
         for (auto listitem : list) {
             m_xPLCache->deleteEntry(listitem);
         }
@@ -68,7 +76,7 @@ bool deviceManagerClass::removeConfig( const std::string& deviceTag ) const
     return false;
 }
 
-xPLDevice deviceManagerClass::getDevice( const std::string& deviceTag ) const
+xPLDevice DeviceManager::getDevice( const string& deviceTag ) const
 {
     xPLDevice retval;
     auto device = mDeviceMap.find(deviceTag);
@@ -78,20 +86,20 @@ xPLDevice deviceManagerClass::getDevice( const std::string& deviceTag ) const
     return retval;
 }
 
-std::vector<std::string> deviceManagerClass::getAllDeviceNames() const
+vector<string> DeviceManager::getAllDeviceNames() const
 {
-    std::vector<std::string> retval;
+    vector<string> retval;
     retval.reserve(mDeviceMap.size());
     for (auto node : mDeviceMap) {
         retval.push_back(node.first);
-        writeLog( "deviceManagerClass::getAllDeviceNames() = "+ node.first, logLevel::debug );
+        writeLog( "DeviceManager::getAllDeviceNames() = "+ node.first, logLevel::debug );
     }
     return retval;
 }
         
-void deviceManagerClass::processXplMessage( const xPLMessagePtr message ) 
+void DeviceManager::processXplMessage( const xPLMessagePtr message ) 
 {
-    std::string schema = message->msgClass + std::string(".") + message->msgType;
+    string schema = message->msgClass + string(".") + message->msgType;
     if( message->type != xPL_MESSAGE_COMMAND )
     {
         if(        "config.list"    == schema )
@@ -121,11 +129,11 @@ void deviceManagerClass::processXplMessage( const xPLMessagePtr message )
     }
 }
 
-void deviceManagerClass::processConfigList( const xPLMessagePtr message ) 
+void DeviceManager::processConfigList( const xPLMessagePtr message ) 
 {
-    std::string source = message->getSourceVDI();
+    string source = message->getSourceVDI();
     xPLDevice device = getDevice( source );
-    writeLog( "deviceManagerClass::processConfigList("+source+") - found ["+device.VDI+"]", logLevel::debug );
+    writeLog( "DeviceManager::processConfigList("+source+") - found ["+device.VDI+"]", logLevel::debug );
     if( "" == device.VDI ) {
         // A config list turned up that we haven't asked for...
         // create a new device...
@@ -146,10 +154,10 @@ void deviceManagerClass::processConfigList( const xPLMessagePtr message )
     }
 
     for( auto entry : message->namedValues) {
-        std::string newtag = "config." + source + ".options.";
-        std::string value = entry.first;
+        string newtag = "config." + source + ".options.";
+        string value = entry.first;
         to_lower(value);
-        std::string key   = entry.second;
+        string key   = entry.second;
         to_lower(key);
         boost::regex re( "([a-z0-9]{1,16})\\[(\\d{1,3})\\]" );
         boost::smatch matches;
@@ -180,7 +188,7 @@ void deviceManagerClass::processConfigList( const xPLMessagePtr message )
     }
 }
 
-ptime deviceManagerClass::calculateExpireTime(const std::string& string_interval, int *pInterval)
+ptime DeviceManager::calculateExpireTime(const string& string_interval, int *pInterval)
 {
     int interval = string_interval.empty() ? atoi(string_interval.c_str()) : 5; // default to 5 minutes
     if (pInterval) {
@@ -189,17 +197,17 @@ ptime deviceManagerClass::calculateExpireTime(const std::string& string_interval
     return calculateExpireTime(interval);
 }
 
-ptime deviceManagerClass::calculateExpireTime(int interval)
+ptime DeviceManager::calculateExpireTime(int interval)
 {
     return second_clock::local_time() + minutes( 2* interval + 1 );
 }
 
-void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
+void DeviceManager::processConfigHeartBeat( const xPLMessagePtr message )
 {
-    std::string source = message->getSourceVDI();
+    string source = message->getSourceVDI();
 
     xPLDevice device = getDevice( source );
-    writeLog( "deviceManagerClass::processConfigHeartBeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
+    writeLog( "DeviceManager::processConfigHeartBeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
     if( device.VDI.empty() ) {
         // this handles a new application that identifies itself with a hbeat straight away.
         // it must either be storing it's config locally, can't be configured, or is configured somewhere else.
@@ -235,11 +243,11 @@ void deviceManagerClass::processConfigHeartBeat( const xPLMessagePtr message )
     }
 }
 
-void deviceManagerClass::processCurrentConfig( const xPLMessagePtr message )
+void DeviceManager::processCurrentConfig( const xPLMessagePtr message )
 {
-    std::string source = message->getSourceVDI();
+    string source = message->getSourceVDI();
     xPLDevice device = getDevice( source );
-    writeLog( "deviceManagerClass::processCurrentConfig("+source+") - found ["+device.VDI+"]", logLevel::debug );
+    writeLog( "DeviceManager::processCurrentConfig("+source+") - found ["+device.VDI+"]", logLevel::debug );
     if( "" == device.VDI ) {
         // A current config turned up for a device that we don't know...
         // Processing the current config doesn't make sense as long as we don't know the config list
@@ -251,14 +259,14 @@ void deviceManagerClass::processCurrentConfig( const xPLMessagePtr message )
         m_xPLCache->updateEntry( "config." + source + ".current", "true", false );
     }
     
-    std::string multiKey;
+    string multiKey;
     int multiCount = 0;
     for( auto entry : message->namedValues) {
-        std::string value = entry.first;
+        string value = entry.first;
         to_lower(value);
-        std::string key   = entry.second;
+        string key   = entry.second;
         to_lower(key);
-        std::string count = m_xPLCache->objectValue( "config." + source + ".options." + key + ".count" );
+        string count = m_xPLCache->objectValue( "config." + source + ".options." + key + ".count" );
         if( "" != count ) {
             if( multiKey == key ) {
                 multiCount++;
@@ -274,14 +282,14 @@ void deviceManagerClass::processCurrentConfig( const xPLMessagePtr message )
     }
 }
 
-void deviceManagerClass::processHeartbeat( xPLMessagePtr message )
+void DeviceManager::processHeartbeat( xPLMessagePtr message )
 {
-    std::string source = message->getSourceVDI();
+    string source = message->getSourceVDI();
 
     xPLDevice device = getDevice( source );
     int interval = 5;
     ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
-    writeLog( "deviceManagerClass::processHeartbeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
+    writeLog( "DeviceManager::processHeartbeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
 
     if( "" == device.VDI ) {
         // this handles a new application that identifies itself with a hbeat straight away.
@@ -316,24 +324,24 @@ void deviceManagerClass::processHeartbeat( xPLMessagePtr message )
     }
 }
 
-void deviceManagerClass::processRemove( xPLMessagePtr message )
+void DeviceManager::processRemove( xPLMessagePtr message )
 {
-    std::string source = message->getSourceVDI();
+    string source = message->getSourceVDI();
 
     remove( source );
     removeConfig( source );
 }
 
-void deviceManagerClass::sendConfigResponse( const std::string& source, const bool removeOldValue )
+void DeviceManager::sendConfigResponse( const string& source, const bool removeOldValue )
 {
-    writeLog( "deviceManagerClass::sendConfigResponse("+source+", "+(removeOldValue?"true":"false")+")", logLevel::debug );
+    writeLog( "DeviceManager::sendConfigResponse("+source+", "+(removeOldValue?"true":"false")+")", logLevel::debug );
     boost::regex re( "config\\." + source + "\\.current\\.([a-z0-9]{1,16})(?:\\{([0-9]{1,3})\\})?" );
-    std::vector<std::string> entries = m_xPLCache->filterByRegEx( re );
+    vector<string> entries = m_xPLCache->filterByRegEx( re );
     xPLMessage::namedValueList list;
     for( auto entry : entries) {
         boost::smatch matches;
         boost::regex_match( entry, matches, re );
-        writeLog( "deviceManagerClass::sendConfigResponse: ["+entry+"] -> ["+matches[1]+"]("+matches[2]+")",logLevel::debug );
+        writeLog( "DeviceManager::sendConfigResponse: ["+entry+"] -> ["+matches[1]+"]("+matches[2]+")",logLevel::debug );
         if( matches.size() > 1 ) {
             list.push_back( std::make_pair( matches[1], m_xPLCache->objectValue( entry ) ) );
         }
@@ -356,24 +364,24 @@ void deviceManagerClass::sendConfigResponse( const std::string& source, const bo
     }
 }
 
-bool deviceManagerClass::storeNewConfig( const std::string& source, const std::string& config )
+bool DeviceManager::storeNewConfig( const string& source, const string& config )
 {
-    writeLog( "deviceManagerClass::storeNewConfig("+source+", "+config+")", logLevel::debug );
+    writeLog( "DeviceManager::storeNewConfig("+source+", "+config+")", logLevel::debug );
     auto device = mDeviceMap.find(source);
     if (device == mDeviceMap.end()) {
         return false;
     }
 
-    std::vector<std::string> list;
+    vector<string> list;
     split( list, config, is_any_of("\r\n"), token_compress_on );
-    std::string multiKey;
+    string multiKey;
     int multiCount = 0;
     for( auto listitem : list) {
-        std::vector<std::string> tags;
+        vector<string> tags;
         split( tags, listitem, is_any_of("=") );
         to_lower( tags[0] );
         to_lower( tags[1] );
-        std::string count = m_xPLCache->objectValue( "config." + source + ".options." + tags[0] + ".count" );
+        string count = m_xPLCache->objectValue( "config." + source + ".options." + tags[0] + ".count" );
         if( "" != count ) {
             if( multiKey != tags[0] ) {
                 multiKey = tags[0];
@@ -394,12 +402,12 @@ bool deviceManagerClass::storeNewConfig( const std::string& source, const std::s
     return true;
 }
     
-bool deviceManagerClass::contains( const std::string& deviceTag ) const
+bool DeviceManager::contains( const string& deviceTag ) const
 {
     return mDeviceMap.find(deviceTag) != mDeviceMap.end();
 }
 
-bool deviceManagerClass::containsConfig( const std::string& configTag ) const
+bool DeviceManager::containsConfig( const string& configTag ) const
 {
     return m_xPLCache->childNodes( "config." + configTag ).size() > 0; 
 }

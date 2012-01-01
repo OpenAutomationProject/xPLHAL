@@ -18,7 +18,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
-using namespace boost::algorithm;
+using std::string;
 
 #include "log.h"
 
@@ -31,7 +31,7 @@ using namespace boost::algorithm;
 
 int xPLHandler::m_refcount = 0;
 
-xPLHandler::xPLHandler( const std::string& host_name)
+xPLHandler::xPLHandler( const string& host_name)
 : xPLService(0)
 , m_exit_thread(false)
 , vendor( "CHRISM" )
@@ -114,7 +114,7 @@ void xPLHandler::run()
         // send waiting messages
         while( xPL_MessagePtr theMessage = xPLMessageQueue->consume( xPLService ) )
         {
-            writeLog("Found xPL message at " + lexical_cast<std::string>(theMessage)+ " to send...", logLevel::debug);
+            writeLog("Found xPL message at " + lexical_cast<string>(theMessage)+ " to send...", logLevel::debug);
             if ( !xPL_sendMessage( theMessage ) )
                 writeLog("Unable to send xPL message", logLevel::debug);
             else
@@ -126,29 +126,29 @@ void xPLHandler::run()
     }
 }
 
-void xPLHandler::sendBroadcastMessage( const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues ) const
+void xPLHandler::sendBroadcastMessage( const string& msgClass, const string& msgType, const xPLMessage::namedValueList& namedValues ) const
 {
     writeLog( "xPLHandler::sendBroadcastMessage( "+msgClass+", "+msgType+" )", logLevel::debug );
     xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( xPL_MESSAGE_COMMAND, "*", "", "", msgClass, msgType, namedValues ) ) );
 }
 
-void xPLHandler::sendMessage( const xPL_MessageType type, const std::string& tgtVendor, const std::string& tgtDeviceID, 
-        const std::string& tgtInstanceID, const std::string& msgClass, const std::string& msgType, 
+void xPLHandler::sendMessage( const xPL_MessageType type, const string& tgtVendor, const string& tgtDeviceID, 
+        const string& tgtInstanceID, const string& msgClass, const string& msgType, 
         const xPLMessage::namedValueList& namedValues ) const
 {
-    writeLog( "xPLHandler::sendMessage( "+lexical_cast<std::string>(type)+", "+tgtVendor+", "+tgtDeviceID+", "+tgtInstanceID+", "+msgClass+", "+msgType+" )", logLevel::debug );
+    writeLog( "xPLHandler::sendMessage( "+lexical_cast<string>(type)+", "+tgtVendor+", "+tgtDeviceID+", "+tgtInstanceID+", "+msgClass+", "+msgType+" )", logLevel::debug );
     xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( type, tgtVendor, tgtDeviceID, tgtInstanceID, msgClass, msgType, namedValues ) ) );
 }
 
-void xPLHandler::sendMessage( const xPL_MessageType type, const std::string& VDI,
-        const std::string& msgClass, const std::string& msgType,
+void xPLHandler::sendMessage( const xPL_MessageType type, const string& VDI,
+        const string& msgClass, const string& msgType,
         const xPLMessage::namedValueList& namedValues ) const
 {
     size_t marker1 = VDI.find( "-" );
     size_t marker2 = VDI.find( "." );
-    std::string vendor   = VDI.substr( 0, marker1 );
-    std::string device   = VDI.substr( marker1+1, marker2 - (marker1+1) );
-    std::string instance = VDI.substr( marker2+1 );
+    string vendor   = VDI.substr( 0, marker1 );
+    string device   = VDI.substr( marker1+1, marker2 - (marker1+1) );
+    string instance = VDI.substr( marker2+1 );
     xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( type, vendor, device, instance, msgClass, msgType, namedValues ) ) );
 }
 

@@ -20,10 +20,11 @@
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 
-using namespace boost::algorithm;
+using boost::algorithm::replace_all;
 using boost::lexical_cast;
+using std::string;
 
-std::string xPLMessage::getTypeString() const
+string xPLMessage::getTypeString() const
 {
     switch(type)
     {
@@ -34,17 +35,17 @@ std::string xPLMessage::getTypeString() const
     }
 }
         
-std::string xPLMessage::getSourceVDI() const
+string xPLMessage::getSourceVDI() const
 {
-    return vendor + std::string("-") + deviceID + std::string(".") + instanceID;
+    return vendor + string("-") + deviceID + string(".") + instanceID;
 }
 
-std::string xPLMessage::getTargetVDI() const
+string xPLMessage::getTargetVDI() const
 {
-    return targetVendor + std::string("-") + targetDevice + std::string(".") + targetInstance;
+    return targetVendor + string("-") + targetDevice + string(".") + targetInstance;
 }
         
-bool xPLMessage::setSourceFromVDI(const std::string& source)
+bool xPLMessage::setSourceFromVDI(const string& source)
 {
     size_t marker1 = source.find( "-" );
     size_t marker2 = source.find( "." );
@@ -55,7 +56,7 @@ bool xPLMessage::setSourceFromVDI(const std::string& source)
     return true;
 }
 
-bool xPLMessage::setTargetFromVDI(const std::string& target)
+bool xPLMessage::setTargetFromVDI(const string& target)
 {
     if (target == "*") {
         isBroadcastMessage = true;
@@ -72,7 +73,7 @@ bool xPLMessage::setTargetFromVDI(const std::string& target)
     return true;
 }
         
-std::string xPLMessage::getNamedValue(const std::string& tag) const
+string xPLMessage::getNamedValue(const string& tag) const
 {
     for (auto entry : namedValues) {
         if (entry.first == tag) {
@@ -82,9 +83,9 @@ std::string xPLMessage::getNamedValue(const std::string& tag) const
     return "";
 }
 
-std::string xPLMessage::printXPLMessage() const
+string xPLMessage::printXPLMessage() const
 {
-    std::string result;
+    string result;
     result += "<" + getTypeString() + " ";
 
     /* Source Info */
@@ -102,7 +103,7 @@ std::string xPLMessage::printXPLMessage() const
     }
 
     /* Print hop count */
-    result += " (" + lexical_cast<std::string>(hopcount) + " hops) ";
+    result += " (" + lexical_cast<string>(hopcount) + " hops) ";
 
     /* Echo Schema Info */
     result += "[" + msgClass + "." + msgType + "]: ";
@@ -136,7 +137,7 @@ bool xPLMessage::operator==(const xPLMessage& right) const
     return true;
 }
         
-xPLMessage::operator std::string() const
+xPLMessage::operator string() const
 {
     return printXPLMessage();
 }

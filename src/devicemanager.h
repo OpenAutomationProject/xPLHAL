@@ -27,10 +27,10 @@ class IxPLCacheClass;
 #include "globals.h"
 #include "xpldevice.h"
 
-class deviceManagerClass
+class DeviceManager
 {
     public:
-        deviceManagerClass(IxPLCacheClass* xplcache);
+        DeviceManager(IxPLCacheClass* xplcache);
         
         /** \brief Looks if the device deviceTag is known. */
         bool contains( const std::string& deviceTag ) const;
