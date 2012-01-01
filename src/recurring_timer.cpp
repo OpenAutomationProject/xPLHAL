@@ -24,7 +24,6 @@ RecurringTimer::RecurringTimer(boost::asio::io_service& io_service,
 :m_timer(io_service, expiry_time)
 ,m_delay(expiry_time)
 ,m_running(false) 
-,m_expireFunc(nullptr)
 { 
     if (startTimer) {
         start();
@@ -34,11 +33,6 @@ RecurringTimer::RecurringTimer(boost::asio::io_service& io_service,
 RecurringTimer::~RecurringTimer() 
 {
     stop();
-}
-
-void RecurringTimer::setExpireHandler(void (*handler)(const boost::system::error_code& e)) 
-{
-    m_expireFunc = handler;
 }
 
 void RecurringTimer::start() 
@@ -59,8 +53,6 @@ void RecurringTimer::onExpire(const boost::system::error_code& e)
         m_timer.expires_at(m_timer.expires_at() + m_delay);
         m_timer.async_wait(boost::bind(&RecurringTimer::onExpire, this, _1));
     }
-    if (m_expireFunc) {
-        m_expireFunc(e);
-    }
+    sigExpired(e);
 }
 

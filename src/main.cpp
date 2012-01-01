@@ -24,7 +24,9 @@
 
 // load globas and give them their space to live
 #include "globals.h"
-using namespace boost::filesystem;
+
+using boost::filesystem::path;
+using boost::filesystem::initial_path;
 
 path xPLHalRootFolder;
 path DataFileFolder;
@@ -32,20 +34,104 @@ path ScriptEngineFolder;
 path rulesFolder;
 
 xPLCacheClass *xPLCache;
-deviceManagerClass *deviceManager;
 xPLHandler *xPL;
 xPLMessageQueueClass *xPLMessageQueue;
-        
+
 static boost::asio::io_service* g_ioservice = nullptr;
+
+class XplHalApplication
+{
+    public:
+        XplHalApplication() 
+        :mXplMessageQueue(new xPLMessageQueueClass)
+        ,mXplCache(new xPLCacheClass)
+        ,mDeviceManager(mXplCache)
+        ,mXHCPServer(new XHCPServer(m_ioservice, &mDeviceManager))
+        ,mXpl(new xPLHandler( boost::asio::ip::host_name() ))
+        ,mTimerListAllObjects(m_ioservice,      boost::posix_time::seconds(60), true)
+        ,mTimerFlushExpiredEntries(m_ioservice, boost::posix_time::minutes(5), true)
+        {
+            mDeviceManager.m_sigSendXplMessage.connect(boost::bind(&xPLMessageQueueClass::add, mXplMessageQueue, _1));
+            mXpl->m_sigRceivedXplMessage.connect(boost::bind(&DeviceManager::processXplMessage, &mDeviceManager, _1));
+            installTimer();
+
+            /* set global variables */
+            xPLCache = mXplCache;
+            xPL = mXpl;
+            xPLMessageQueue = mXplMessageQueue;
+
+            writeLog( "initialized", logLevel::all );
+        }
+
+        ~XplHalApplication()
+        {
+            // clean up
+            delete mXHCPServer;
+            writeLog( "main: xhcp shutdown", logLevel::all );
+            //    delete deviceManager;
+            //    writeLog( "main: deviceManager shutdown", logLevel::all );
+            delete mXplCache;
+            writeLog( "main: xPLCache shutdown", logLevel::all );
+            delete mXpl;
+            writeLog( "main: xPL shutdown", logLevel::all );
+        }
+
+        void installTimer()
+        {
+            mTimerListAllObjects.sigExpired.connect([](const boost::system::error_code& e) {
+                    writeLog( "main: <tick>", logLevel::all );
+                    writeLog( "xPLCache:\n" + xPLCache->listAllObjects(), logLevel::debug );
+            });
+
+            mTimerFlushExpiredEntries.sigExpired.connect([](const boost::system::error_code& e) {
+                    writeLog( "main: flush cache", logLevel::all );
+                    xPLCache->flushExpiredEntries(); // flush cache
+            });
+        }
+
+        static void stop() 
+        {
+            m_ioservice.stop();
+        }
+
+        int exec()
+        {
+            // force everyone to send their configuration so that we start up to date...
+            xPLMessageQueue->add(xPLMessagePtr( new xPLMessage(xPL_MESSAGE_COMMAND, "*", "config", "current", {{"command", "request"}}) ));
+
+            writeLog( "started, run mainloop", logLevel::all );
+            m_ioservice.run();
+            writeLog( "main: shutdown xPLHal", logLevel::all );
+            return 0;
+        }
+
+        static void dispatchEvent(void (*event)()) 
+        {
+            m_ioservice.dispatch(event);
+        }
+        
+    private:
+        static boost::asio::io_service m_ioservice;
+
+        xPLMessageQueueClass *mXplMessageQueue;
+        xPLCacheClass        *mXplCache;
+        DeviceManager    mDeviceManager;
+        XHCPServer      *mXHCPServer;
+        xPLHandler      *mXpl;
+
+        RecurringTimer mTimerListAllObjects;
+        RecurringTimer mTimerFlushExpiredEntries;
+};
+
+boost::asio::io_service XplHalApplication::m_ioservice;
 
 void handle_signal(int signal)
 {
     if (signal == SIGINT || signal == SIGTERM) {
-        if (g_ioservice) {
-            g_ioservice->stop();
-        }
+        XplHalApplication::stop();
     }
 }
+
 
 /**
  * Setup the whole program.
@@ -64,82 +150,37 @@ int main(int UNUSED argc, char** UNUSED argv)
     signal(SIGTERM, handle_signal);
 
     // FIXME : add exception handling for directory operations!!!
-    if(false)//FIXME if( !QDir::setCurrent( xPLHalRootFolder.path() ) )
-    {
+    if(false) {
+        //FIXME if( !QDir::setCurrent( xPLHalRootFolder.path() ) )
         writeLog( "Error changing to working directory \"" + xPLHalRootFolder.string() + "\"!", logLevel::error );
         return -1;
     }
 
-    if( !exists( DataFileFolder ) )
-    {
+    if( !exists( DataFileFolder ) ) {
         writeLog( "Directory \"" + DataFileFolder.string() + "\" for DataFileFolder doesn't exist. Creating it...", logLevel::debug );
-        if( !create_directory( DataFileFolder ) )
-        {
+        if( !create_directory( DataFileFolder ) ) {
             writeLog( "Error creating data directory \"" + DataFileFolder.string() + "\"!", logLevel::error );
             return -1;
         }
     }
 
-    if( !exists( ScriptEngineFolder ) )
-    {
+    if( !exists( ScriptEngineFolder ) ) {
         writeLog( "Directory \"" + ScriptEngineFolder.string() + "\" for ScriptEngineFolder doesn't exist. Creating it...", logLevel::debug );
-        if( !create_directory( ScriptEngineFolder ) )
-        {
+        if( !create_directory( ScriptEngineFolder ) ) {
             writeLog( "Error creating script directory \"" + ScriptEngineFolder.string() + "\"!", logLevel::error );
             return -1;
         }
     }
 
-    if( !exists( rulesFolder ) )
-    {
+    if( !exists( rulesFolder ) ) {
         writeLog( "Directory \"" + rulesFolder.string() + "\" for rulesFolder doesn't exist. Creating it...", logLevel::debug );
-        if( !create_directory( rulesFolder ) )
-        {
+        if( !create_directory( rulesFolder ) ) {
             writeLog( "Error creating determinator directory \"" + rulesFolder.string() + "\"!", logLevel::error );
             return -1;
         }
     }
-    
-    boost::asio::io_service io;
-    g_ioservice = &io;
 
-    xPLMessageQueue = new xPLMessageQueueClass;
-    xPLCache = new xPLCacheClass;
-    XHCPServer *xhcpServer = new XHCPServer(io);
-    xPL = new xPLHandler( boost::asio::ip::host_name() ); //xPL->start();
-    deviceManager = new deviceManagerClass(xPLCache);
-    deviceManager->m_sigSendXplMessage.connect(boost::bind(&xPLMessageQueueClass::add, xPLMessageQueue, _1));
-    xPL->m_sigRceivedXplMessage.connect(boost::bind(&deviceManagerClass::processXplMessage, deviceManager, _1));
-    writeLog( "started", logLevel::all );
-
-    // force everyone to send their configuration so that we start up to date...
-    xPLMessage::namedValueList command_request; command_request.push_back( std::make_pair( "command", "request" ) );
-    xPL->sendBroadcastMessage( "config", "list", command_request );
-  
-    RecurringTimer timer_listAllObjects(io, boost::posix_time::seconds(60), true);
-    timer_listAllObjects.setExpireHandler([](const boost::system::error_code& e) {
-        writeLog( "main: <tick>", logLevel::all );
-        writeLog( "xPLCache:\n" + xPLCache->listAllObjects(), logLevel::debug );
-    });
-    
-    RecurringTimer timer_flushExpiredEntries(io, boost::posix_time::minutes(5), true);
-    timer_flushExpiredEntries.setExpireHandler([](const boost::system::error_code& e) {
-        writeLog( "main: flush cache", logLevel::all );
-        xPLCache->flushExpiredEntries(); // flush cache
-    });
-
-    io.run();
-    g_ioservice = nullptr;
-
-    writeLog( "main: shutdown xPLHal", logLevel::all );
-
-    // clean up
-    delete xhcpServer;
-    writeLog( "main: xhcp shutdown", logLevel::all );
-    delete deviceManager;
-    writeLog( "main: deviceManager shutdown", logLevel::all );
-    delete xPLCache;
-    writeLog( "main: xPLCache shutdown", logLevel::all );
-    delete xPL;
-    writeLog( "main: xPL shutdown", logLevel::all );
+    XplHalApplication app;
+    return app.exec();
 }
+

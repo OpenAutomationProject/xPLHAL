@@ -18,6 +18,7 @@
 */
 
 #include <boost/asio.hpp>
+#include <boost/signals2/signal.hpp>
 
 class RecurringTimer
 {
@@ -25,10 +26,10 @@ class RecurringTimer
         RecurringTimer(boost::asio::io_service& io_service, const boost::asio::deadline_timer::duration_type& expiry_time, bool startTimer = false);
         ~RecurringTimer();
 
-        void setExpireHandler(void (*handler)(const boost::system::error_code& e));
-
         void start();
         void stop();
+        
+        boost::signals2::signal<void (const boost::system::error_code& e)> sigExpired;
 
     private:
         void onExpire(const boost::system::error_code& e);
@@ -36,6 +37,5 @@ class RecurringTimer
         const boost::asio::deadline_timer::duration_type m_delay;
         bool m_running;
         boost::asio::deadline_timer m_timer; 
-        void (*m_expireFunc)(const boost::system::error_code&);
 };
 
