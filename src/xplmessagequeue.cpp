@@ -17,13 +17,15 @@
  */
 
 #include "log.h"
-
 #include "xplmessagequeue.h"
+
+using std::mutex;
+using std::lock_guard;
 
 void xPLMessageQueueClass::add( const xPLMessagePtr& message )
 {
     writeLog("xPLMessageQueueClass::add", logLevel::debug);
-    lock_guard locker( queueLock ); // get exclusive access to the queue
+    lock_guard<mutex> locker( queueLock ); // get exclusive access to the queue
     xPLMessages.push( message );
 }
 
@@ -31,7 +33,7 @@ xPL_MessagePtr xPLMessageQueueClass::consume( const xPL_ServicePtr& service )
 {
     xPLMessagePtr message;
     {
-        lock_guard locker( queueLock );   // get exclusive access to the queue
+        lock_guard<mutex> locker( queueLock );   // get exclusive access to the queue
         if( xPLMessages.empty() )
             return 0;
         message = xPLMessages.front();    // and release is as soon as possible

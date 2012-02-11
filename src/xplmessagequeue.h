@@ -20,10 +20,7 @@
 #include <vector>
 #include <queue>
 #include <string>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/locks.hpp>
+#include <thread>
 
 #include "xplmessage.h"
 
@@ -33,8 +30,7 @@
 class xPLMessageQueueClass
 {
     /** \brief variable to ensure that the queue is thread save... */
-    mutable boost::mutex queueLock;
-    typedef boost::lock_guard<boost::mutex> lock_guard;
+    mutable std::mutex queueLock;
     std::queue<xPLMessagePtr> xPLMessages;
 
   public:
