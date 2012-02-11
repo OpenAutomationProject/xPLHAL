@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xplDeterminator>
+  <determinator name="Terrarium 30p fast dim" description="" IsGroup="N" enabled="Y" guid="108dac7f0f346d6384313c9a4191f42d">
+    <input match="all">
+      <globalCondition display_name="Gobal variable is 1" name="TERRARIUM_ZUSTAND" operator="=" value="1" />
+    </input>
+    <output>
+      <xplAction executeOrder="Switch On FFFF/02" display_name="Switch On FFFF/02" msg_type="cmnd" msg_target="PNXS-FS20.DEFAULT1" msg_schema="lighting.basic">
+        <xplActionParam expression="command=goto" />
+        <xplActionParam expression="network=FFFF" />
+        <xplActionParam expression="device=02" />
+        <xplActionParam expression="channel=1" />
+        <xplActionParam expression="level=30" />
+        <xplActionParam expression="fade-rate=30" />
+      </xplAction>
+    </output>
+  </determinator>
+</xplDeterminator>
+

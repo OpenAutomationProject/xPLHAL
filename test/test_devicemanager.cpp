@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE( add_device )
     xPLMessagePtr msg( createXplMessage(xPL_MESSAGE_TRIGGER, "pnxs-hs485.default1", "*", "blah", "blub", {{"tag", "value"}}));
     MockXplCache mockCache;
 
-    deviceManagerClass dm(&mockCache);
+    DeviceManager dm(&mockCache);
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == false);
     dm.processHeartbeat(msg);
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == true);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( remove_device )
     sigrecv.handleSignal(createXplMessage(xPL_MESSAGE_COMMAND, "pnxs-hs485.default1", "*", "config", "list", {{"command", "request"}}));
     sigrecv.activate();
 
-    deviceManagerClass dm(&mockCache);
+    DeviceManager dm(&mockCache);
     dm.m_sigSendXplMessage.connect(boost::bind(&MockSignalReceiver::handleSignal, &sigrecv, _1));
 
     BOOST_CHECK( dm.contains("pnxs-hs485.default1") == false);

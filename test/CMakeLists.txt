@@ -23,7 +23,8 @@ find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 file(GLOB_RECURSE UnitTests_sources *.cpp)
 
 #set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplcache.cpp ../src/xplhandler.cpp ../src/xplmessagequeue.cpp)
-set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplmessage.cpp)
+set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplmessage.cpp ../src/determinator.cpp 
+                  ../src/determinatoritems.cpp ../src/pugixml.cpp)
 
 add_executable(test_runner ${UnitTests_sources} ${UnitTest_tsrc})
 

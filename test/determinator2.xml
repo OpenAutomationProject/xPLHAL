@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xplDeterminator>
+  <determinator name="Klingel Erna" description="" groupName="" IsGroup="N" enabled="Y" guid="e4b9589546e9805a34c80d21ef6a661e">
+    <input match="all">
+      <xplCondition display_name="Klingel Erna gedrueckt" msg_type="trig" source_vendor="pnxs" source_device="ppdev" source_instance="default" target_vendor="*" target_device="*" target_instance="*" schema_class="sensor" schema_type="basic">
+        <param name="device" operator="=" value="7" />
+        <param name="type" operator="=" value="input" />
+        <param name="current" operator="=" value="1" />
+      </xplCondition>
+    </input>
+    <output>
+      <xplAction executeOrder="Call Zap/g2/302" display_name="Call Zap/g2/302" msg_type="cmnd" msg_target="PNXS-ASTERISK.DEFAULT" msg_schema="asterisk.dial">
+        <xplActionParam expression="channel=Zap/g2/302" />
+        <xplActionParam expression="context=intern-call" />
+        <xplActionParam expression="exten=21" />
+        <xplActionParam expression="priority=1" />
+        <xplActionParam expression="timeout=60000" />
+        <xplActionParam expression="callerid=&lt;21&gt; Tuer" />
+      </xplAction>
+    </output>
+  </determinator>
+</xplDeterminator>
+
