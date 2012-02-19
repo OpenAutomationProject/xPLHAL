@@ -20,57 +20,61 @@
 #include <vector>
 #include <string>
 
-#include <boost/thread.hpp>
-#include <boost/thread/locks.hpp>
 #include <boost/signals2/signal.hpp>
+#include <boost/asio.hpp>
+#include "xplmessage.h"
 
-// this is also including the xPL.h
-#include "xplmessagequeue.h"
+class XplMessageQueue;
 
 /**
  * \brief Handle all xPL communication.
  */
 class xPLHandler
 {
-    /** \brief variable to ensure that the xPL library is only called at the same time... */
-    //mutable boost::mutex xPLLock;
-    //typedef boost::lock_guard<boost::mutex> lock_guard;
     public:
         typedef boost::signals2::signal<void (xPLMessagePtr)> signal_t;
 
     public:
-        xPLHandler( const std::string& host_name);
+        xPLHandler(boost::asio::io_service& ioservice, const std::string& host_name);
         ~xPLHandler();
 
         void run();
+    
+        void sendMessage( const xPLMessagePtr& message );
 
         /** \brief Broadcast one message to the xPL network. */
-        void sendBroadcastMessage( const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues ) const;
+        void sendBroadcastMessage( const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues );
 
         /** \brief Send a directed message to the xPL network. */
         void sendMessage( const xPL_MessageType type, const std::string& tgtVendor, const std::string& tgtDeviceID, 
                 const std::string& tgtInstanceID, const std::string& msgClass, const std::string& msgType, 
-                const xPLMessage::namedValueList& namedValues ) const;
+                const xPLMessage::namedValueList& namedValues );
 
         /** \brief Send a directed message to the xPL network. */
         void sendMessage( const xPL_MessageType type, const std::string& VDI,
-                const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues ) const;
+                const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues );
         
     public:
         signal_t m_sigRceivedXplMessage;
 
     private:
+        void startAsyncRead();
+        void handleReadableXplSocket(boost::system::error_code ec);
+        void startAsyncWrite();
+        void handleReadableXplMessagequeue(boost::system::error_code ec);
+
         /** \brief Handle an incomming xPL message. */
         void handleXPLMessage( xPL_MessagePtr theMessage);
 
         /** \brief Handle an incomming xPL message. */
         static void xpl_message_callback( xPL_MessagePtr theMessage, xPL_ObjectPtr userValue );
 
-        xPL_ServicePtr xPLService;
-        std::string vendor;
-        std::string deviceID;
-        std::string instanceID;
-        boost::thread* m_thread;
-        static int m_refcount;
-        bool m_exit_thread;
+        xPL_ServicePtr               xPLService;
+        std::string                  vendor;
+        std::string                  deviceID;
+        std::string                  instanceID;
+        static int                   m_refcount;
+        boost::asio::ip::tcp::socket m_xplSocket;
+        boost::asio::ip::tcp::socket m_xplWriteSocket;
+        std::shared_ptr<XplMessageQueue> mXplMessageQueue;
 };

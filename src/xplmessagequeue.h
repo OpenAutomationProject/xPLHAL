@@ -27,20 +27,27 @@
 /**
  * Thread save store for xPL messages to send
  */
-class xPLMessageQueueClass
+class XplMessageQueue
 {
-    /** \brief variable to ensure that the queue is thread save... */
-    mutable std::mutex queueLock;
-    std::queue<xPLMessagePtr> xPLMessages;
+    public:
+        XplMessageQueue();
+        ~XplMessageQueue();
 
-  public:
-    /** \brief Add an message to the queue that'll be send on the next
-               occasion and return a reference to fill it. */
-    void add( const xPLMessagePtr& message );
+        int getFD() const;
 
-    /** \brief Convert the next message to an xPL message and delete
-               it from the queue. The caller has to ensure that the
-               xPLLib is currently not called elsewhere, i.e. locked! 
-        \returns Returns 0 if no message available or the message. */
-    xPL_MessagePtr consume( const xPL_ServicePtr& service );
+        /** \brief Add an message to the queue that'll be send on the next
+          occasion and return a reference to fill it. */
+        void add( const xPLMessagePtr& message );
+
+        /** \brief Convert the next message to an xPL message and delete
+          it from the queue. The caller has to ensure that the
+          xPLLib is currently not called elsewhere, i.e. locked! 
+          \returns Returns 0 if no message available or the message. */
+        xPL_MessagePtr consume( const xPL_ServicePtr& service );
+    private:
+        /** \brief variable to ensure that the queue is thread save... */
+        mutable std::mutex queueLock;
+        std::queue<xPLMessagePtr> xPLMessages;
+        int mPipeFD[2];
 };
+

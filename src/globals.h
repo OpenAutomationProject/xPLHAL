@@ -31,9 +31,6 @@ extern xPLCacheClass *xPLCache;
 class xPLHandler;
 extern xPLHandler *xPL;
 
-class xPLMessageQueueClass;
-extern xPLMessageQueueClass *xPLMessageQueue;
-
 /** The working directories */
 extern boost::filesystem::path xPLHalRootFolder;
 extern boost::filesystem::path DataFileFolder;

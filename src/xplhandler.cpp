@@ -16,14 +16,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "xplhandler.h"
+#include "xplmessagequeue.h"
+
 #include <boost/algorithm/string/replace.hpp>
 
 using std::string;
 
 #include "log.h"
 
-#include "xplhandler.h"
-#include "globals.h"
 
 /** Handle a change to the logger service configuration */
 /* static void configChangedHandler(xPL_ServicePtr theService, xPL_ObjectPtr userData) {
@@ -31,12 +32,14 @@ using std::string;
 
 int xPLHandler::m_refcount = 0;
 
-xPLHandler::xPLHandler( const string& host_name)
+xPLHandler::xPLHandler(boost::asio::io_service& ioservice, const std::string& host_name)
 : xPLService(0)
-, m_exit_thread(false)
 , vendor( "CHRISM" )
 , deviceID( "xplhalqt" )
 , instanceID( host_name )
+, m_xplSocket(ioservice)
+, m_xplWriteSocket(ioservice)
+, mXplMessageQueue(new XplMessageQueue)
 {
     writeLog( "xPLHandler::xPLHandler( "+host_name+" )", logLevel::debug );
     //xPL_setDebugging(TRUE);
@@ -54,7 +57,7 @@ xPLHandler::xPLHandler( const string& host_name)
             writeLog("Unable to start xPL", logLevel::debug);
         }
     }
-
+    
     /* And a listener for all xPL messages */
     xPL_addMessageListener( xpl_message_callback, this );
 
@@ -82,16 +85,17 @@ xPLHandler::xPLHandler( const string& host_name)
         xPL_addServiceConfigChangedListener(loggerService, configChangedHandler, NULL);*/
     //xPL_setServiceEnabled(loggerService, TRUE);
     xPL_setServiceEnabled(xPLService, TRUE);
-
-    m_thread = new boost::thread(boost::bind(&xPLHandler::run, this));
+    
+    m_xplSocket.assign(boost::asio::ip::tcp::v4(), xPL_getFD());
+    m_xplWriteSocket.assign(boost::asio::ip::tcp::v4(), mXplMessageQueue->getFD());
+    startAsyncRead();
+    startAsyncWrite();
 }
 
 xPLHandler::~xPLHandler()
 {
     writeLog( "xPLHandler::~xPLHandler()", logLevel::debug );
-    m_exit_thread = true;
-    m_thread->join();
-    delete m_thread;
+    m_xplSocket.close();
     if (xPLService) {
         xPL_releaseService(xPLService);
     }
@@ -100,56 +104,30 @@ xPLHandler::~xPLHandler()
     }
 }
 
-void xPLHandler::run()
-{
-    writeLog( "xPLHandler::run()", logLevel::debug );
-    //  writeLog( "xPLHandler::run() - ready", logLevel::debug );
-
-    // Hand control over to xPLLib 
-    while( ! m_exit_thread )
-    {
-        // get exclusive access to xPLib
-        //lock_guard locker( xPLLock );
-
-        // send waiting messages
-        while( xPL_MessagePtr theMessage = xPLMessageQueue->consume( xPLService ) )
-        {
-            writeLog("Found xPL message at " + lexical_cast<string>(theMessage)+ " to send...", logLevel::debug);
-            if ( !xPL_sendMessage( theMessage ) )
-                writeLog("Unable to send xPL message", logLevel::debug);
-            else
-                writeLog( "xPL Message sent...", logLevel::debug );
-        }
-
-        // handle messages - and return after 100 ms
-        xPL_processMessages(100);
-    }
-}
-
-void xPLHandler::sendBroadcastMessage( const string& msgClass, const string& msgType, const xPLMessage::namedValueList& namedValues ) const
+void xPLHandler::sendBroadcastMessage( const string& msgClass, const string& msgType, const xPLMessage::namedValueList& namedValues )
 {
     writeLog( "xPLHandler::sendBroadcastMessage( "+msgClass+", "+msgType+" )", logLevel::debug );
-    xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( xPL_MESSAGE_COMMAND, "*", "", "", msgClass, msgType, namedValues ) ) );
+    sendMessage( xPLMessagePtr( new xPLMessage( xPL_MESSAGE_COMMAND, "*", "", "", msgClass, msgType, namedValues ) ) );
 }
 
 void xPLHandler::sendMessage( const xPL_MessageType type, const string& tgtVendor, const string& tgtDeviceID, 
         const string& tgtInstanceID, const string& msgClass, const string& msgType, 
-        const xPLMessage::namedValueList& namedValues ) const
+        const xPLMessage::namedValueList& namedValues )
 {
     writeLog( "xPLHandler::sendMessage( "+lexical_cast<string>(type)+", "+tgtVendor+", "+tgtDeviceID+", "+tgtInstanceID+", "+msgClass+", "+msgType+" )", logLevel::debug );
-    xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( type, tgtVendor, tgtDeviceID, tgtInstanceID, msgClass, msgType, namedValues ) ) );
+    sendMessage( xPLMessagePtr( new xPLMessage( type, tgtVendor, tgtDeviceID, tgtInstanceID, msgClass, msgType, namedValues ) ) );
 }
 
 void xPLHandler::sendMessage( const xPL_MessageType type, const string& VDI,
         const string& msgClass, const string& msgType,
-        const xPLMessage::namedValueList& namedValues ) const
+        const xPLMessage::namedValueList& namedValues ) 
 {
     size_t marker1 = VDI.find( "-" );
     size_t marker2 = VDI.find( "." );
     string vendor   = VDI.substr( 0, marker1 );
     string device   = VDI.substr( marker1+1, marker2 - (marker1+1) );
     string instance = VDI.substr( marker2+1 );
-    xPLMessageQueue->add( xPLMessagePtr( new xPLMessage( type, vendor, device, instance, msgClass, msgType, namedValues ) ) );
+    sendMessage( xPLMessagePtr( new xPLMessage( type, vendor, device, instance, msgClass, msgType, namedValues ) ) );
 }
 
 void xPLHandler::xpl_message_callback( xPL_MessagePtr theMessage, void *userValue )
@@ -195,4 +173,44 @@ void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
     writeLog(msg->printXPLMessage(), logLevel::debug );
 
     m_sigRceivedXplMessage(msg);
+}
+        
+void xPLHandler::startAsyncRead()
+{
+    m_xplSocket.async_read_some(boost::asio::null_buffers(), boost::bind(&xPLHandler::handleReadableXplSocket, this, _1));
+}
+
+void xPLHandler::startAsyncWrite()
+{
+    m_xplWriteSocket.async_read_some(boost::asio::null_buffers(), boost::bind(&xPLHandler::handleReadableXplMessagequeue, this, _1));
+}
+
+void xPLHandler::handleReadableXplMessagequeue(boost::system::error_code ec)
+{
+    if (!ec) {
+        // send waiting messages
+        while( xPL_MessagePtr theMessage = mXplMessageQueue->consume( xPLService ) )
+        {
+            writeLog("Found xPL message at " + lexical_cast<string>(theMessage)+ " to send...", logLevel::debug);
+            if ( !xPL_sendMessage( theMessage ) )
+                writeLog("Unable to send xPL message", logLevel::debug);
+            else
+                writeLog( "xPL Message sent...", logLevel::debug );
+        }
+        startAsyncWrite();
+    }
+}
+        
+void xPLHandler::handleReadableXplSocket(boost::system::error_code ec)
+{
+    if (!ec) {
+        // handle messages - and return
+        xPL_processMessages(0);
+        startAsyncRead();
+    }
+}
+
+void xPLHandler::sendMessage( const xPLMessagePtr& message )
+{
+    mXplMessageQueue->add(message);
 }

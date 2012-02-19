@@ -3,16 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-
-class ConditionParseException: public std::exception
-{
-    public:
-        ConditionParseException(const std::string& text);
-        virtual ~ConditionParseException() throw() {}
-        const char* what() const throw();
-    private:
-        std::string m_text;
-};
+#include <map>
 
 class DeterminatorParseException: public std::exception
 {
@@ -37,12 +28,39 @@ class BaseDeterminatorItem
         virtual void parseFromXml(const pugi::xml_node& basenode) = 0;
         virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const = 0;
         virtual std::string toString() const = 0;
+        virtual bool match() const;
+        virtual void execute() const;
 
         std::string item_name;
         std::string display_name;
 
+        std::map<std::string, std::string> attributes;
+
         //boost::signal2::signal<void ()> sigChanged;
 };
+
+template<typename T>
+class DeterminatorAction: public BaseDeterminatorItem
+{
+    public:
+        DeterminatorAction() :BaseDeterminatorItem(typeid(T).name()) { }
+        DeterminatorAction(const pugi::xml_node& basenode) 
+        :BaseDeterminatorItem(basenode, std::string(typeid(T).name())) { 
+            executeOrder = basenode.attribute("executeOrder").value();
+            attributes["executeOrder"] = executeOrder;
+        }
+        
+        BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const {
+            return BaseDeterminatorItemPtr(new T(basenode));
+        }
+        
+        std::string executeOrder;
+};
+
+
+/*
+ * Conditions
+ */
 
 class XplCondition: public BaseDeterminatorItem
 {
@@ -134,16 +152,128 @@ class TimeCondition: public BaseDeterminatorItem
         std::string value;
 };
 
-class LogAction: public BaseDeterminatorItem
+/*
+ * Actions
+ */
+
+class logAction: public DeterminatorAction<logAction>
 {
     public:
-        LogAction();
-        LogAction(const pugi::xml_node& basenode);
+        logAction() {}
+        logAction(const pugi::xml_node& basenode) : DeterminatorAction(basenode) {
+            parseFromXml(basenode);
+        }
 
-        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void execute() const;
         void parseFromXml(const pugi::xml_node& basenode);
         std::string toString() const;
 
         std::string logText;
         std::string executeOrder;
 };
+
+class xplAction: public DeterminatorAction<xplAction>
+{
+    public:
+        xplAction() {}
+        xplAction(const pugi::xml_node& basenode) : DeterminatorAction(basenode) {
+            parseFromXml(basenode);
+        }
+
+        void execute() const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+        std::string msgType;
+        std::string msgTarget;
+        std::string msgSchema;
+        std::multimap<std::string, std::string> actionParams;
+};
+
+class globalAction: public DeterminatorAction<globalAction>
+{
+    public:
+        globalAction();
+        globalAction(const pugi::xml_node& basenode);
+        void execute() const;
+
+        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+        std::string name;
+        std::string value;
+};
+
+class delayAction: public DeterminatorAction<delayAction>
+{
+    public:
+        delayAction();
+        delayAction(const pugi::xml_node& basenode);
+        void execute() const;
+
+        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+        std::string delaySeconds;
+};
+
+class stopAction: public DeterminatorAction<stopAction>
+{
+    public:
+        stopAction();
+        stopAction(const pugi::xml_node& basenode);
+        void execute() const;
+
+        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+};
+
+class suspendAction: public DeterminatorAction<suspendAction>
+{
+    public:
+        suspendAction();
+        suspendAction(const pugi::xml_node& basenode);
+        void execute() const;
+
+        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+        std::string suspendMinutes;
+        std::string suspendTime;
+        std::string suspendRandomise;
+};
+
+class execRuleAction: public DeterminatorAction<execRuleAction>
+{
+    public:
+        execRuleAction();
+        execRuleAction(const pugi::xml_node& basenode);
+        void execute() const;
+
+        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+        std::string ruleName;
+};
+
+class runScriptAction: public DeterminatorAction<runScriptAction>
+{
+    public:
+        runScriptAction();
+        runScriptAction(const pugi::xml_node& basenode);
+        void execute() const;
+
+        virtual BaseDeterminatorItemPtr createNew(const pugi::xml_node& basenode) const;
+        void parseFromXml(const pugi::xml_node& basenode);
+        std::string toString() const;
+
+        std::string scriptName;
+        std::string parameter;
+};
+

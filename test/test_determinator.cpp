@@ -121,4 +121,13 @@ BOOST_AUTO_TEST_CASE( parse2 )
     }
 }
 
+
+BOOST_AUTO_TEST_CASE( execute1 )
+{
+    DeterminatorXmlParser parser("determinator1.xml");
+    Determinator d(parser.parse());
+
+    d.execute();
+}
+
 BOOST_AUTO_TEST_SUITE_END();

@@ -16,20 +16,40 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "xplmessagequeue.h"
+#include "log.h"
+#include <unistd.h>
+
 
 using std::mutex;
 using std::lock_guard;
-
-void xPLMessageQueueClass::add( const xPLMessagePtr& message )
+        
+XplMessageQueue::XplMessageQueue()
+:mPipeFD({0})
 {
-    writeLog("xPLMessageQueueClass::add", logLevel::debug);
-    lock_guard<mutex> locker( queueLock ); // get exclusive access to the queue
-    xPLMessages.push( message );
+    pipe(mPipeFD);
 }
 
-xPL_MessagePtr xPLMessageQueueClass::consume( const xPL_ServicePtr& service )
+XplMessageQueue::~XplMessageQueue()
+{
+    close(mPipeFD[0]);
+    close(mPipeFD[1]);
+}
+
+int XplMessageQueue::getFD() const
+{
+    return mPipeFD[0];
+}
+
+void XplMessageQueue::add( const xPLMessagePtr& message )
+{
+    writeLog("XplMessageQueue::add", logLevel::debug);
+    lock_guard<mutex> locker( queueLock ); // get exclusive access to the queue
+    xPLMessages.push( message );
+    write(mPipeFD[1], "1", 1);
+}
+
+xPL_MessagePtr XplMessageQueue::consume( const xPL_ServicePtr& service )
 {
     xPLMessagePtr message;
     {
@@ -38,8 +58,10 @@ xPL_MessagePtr xPLMessageQueueClass::consume( const xPL_ServicePtr& service )
             return 0;
         message = xPLMessages.front();    // and release is as soon as possible
         xPLMessages.pop();
+        char dummy[1];
+        read(mPipeFD[0], dummy, 1);
     }
-    writeLog("xPLMessageQueueClass::consume", logLevel::debug);
+    writeLog("XplMessageQueue::consume", logLevel::debug);
 
     xPL_MessagePtr theMessage = 0;
     if( "*" == message->vendor )

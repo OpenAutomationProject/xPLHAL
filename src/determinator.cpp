@@ -3,11 +3,14 @@
 #include <cxxabi.h>
 #include <typeinfo>
 #include <memory>
+#include <functional>
 
 using std::string;
 using std::vector;
 using std::cerr;
 using std::endl;
+using std::thread;
+using std::bind;
 
 void Determinator::printDeterminator() const
 {
@@ -38,7 +41,8 @@ DeterminatorXmlParser::DeterminatorXmlParser(const string& filename)
     registerCondition(BaseDeterminatorItemConstPtr(new DayCondition));
     registerCondition(BaseDeterminatorItemConstPtr(new TimeCondition));
 
-    registerAction(BaseDeterminatorItemConstPtr(new LogAction));
+    registerAction(BaseDeterminatorItemConstPtr(new logAction));
+    registerAction(BaseDeterminatorItemConstPtr(new xplAction));
 
     pugi::xml_parse_result result = m_doc.load_file(filename.c_str());
     cerr << "Load result: " << result.description() << "\n";
@@ -70,6 +74,11 @@ Determinator DeterminatorXmlParser::parse()
             d.enabled = base_d.attribute("guid").value() == "Y";
 
             pugi::xml_node input = base_d.child("input");
+            d.input_match_type = Determinator::match_type::ALL;
+            if (input.attribute("match").value() == "any") {
+                d.input_match_type = Determinator::match_type::ANY;
+            }
+
             pugi::xml_node output = base_d.child("output");
 
             for(auto condition : m_conditionmap) {
@@ -81,7 +90,8 @@ Determinator DeterminatorXmlParser::parse()
             for(auto action : m_actionmap) {
                 pugi::xml_node action_node = output.child(action.first.c_str());
                 if (action_node) {
-                    d.outputs.insert({action.first, BaseDeterminatorItemPtr(action.second->createNew(action_node))} );
+                    BaseDeterminatorItemPtr actionObject(action.second->createNew(action_node));
+                    d.outputs.insert({action.first, actionObject});
                 }
             }
 
@@ -107,5 +117,60 @@ pugi::xml_node DeterminatorXmlParser::getNode(const pugi::xml_node& base, const 
         throw DeterminatorParseException("node '" + childname +"' not found");
     }
     return node;
+}
+        
+Determinator::Determinator()
+{
+}
+
+Determinator::~Determinator()
+{
+    if (mExecuteThread) {
+        mExecuteThread->join();
+    }
+}
+        
+bool Determinator::checkInputs() const
+{
+    for (auto input : inputs) {
+        bool match = input.second->match();
+        switch(input_match_type) {
+            case match_type::ALL: if (!match) return false;
+            case match_type::ANY: if (match) return true;
+        }
+    }
+    return (input_match_type == match_type::ALL);
+}
+
+void Determinator::executeOutputs() const
+{
+    std::multimap<string, BaseDeterminatorItemPtr> orderd_outputs;
+    for (auto output : outputs) {
+        string execOrder;
+        auto execOrderIter = output.second->attributes.find("executeOrder");
+        if (execOrderIter != output.second->attributes.end()) {
+            execOrder = execOrderIter->second;
+        }
+        orderd_outputs.insert({execOrder, output.second});
+    }
+
+    for (auto output : orderd_outputs) {
+        cerr << "execute output:" << output.second->display_name << endl;
+        output.second->execute();
+    }
+}
+
+/**
+ * Check if input conditions are met, then start a thread to execute actions
+ */
+void Determinator::execute()
+{
+    if (checkInputs()) {
+        if (mExecuteThread) {
+            mExecuteThread->join();
+        }
+        cerr << "determinator start thread" << endl;
+        mExecuteThread.reset(new thread(bind(&Determinator::executeOutputs, this)));
+    }
 }
 

@@ -3,20 +3,11 @@
 #include <iostream>
 #include <typeinfo>
 #include <iostream>
+#include "log.h"
 
 using std::string;
 using std::vector;
-
-ConditionParseException::ConditionParseException(const string& text)
-:m_text(text) 
-{
-}
-        
-const char* ConditionParseException::what() const throw() 
-{
-    return m_text.c_str();
-
-}
+using std::map;
 
 DeterminatorParseException::DeterminatorParseException(const string& text)
 :m_text(text)
@@ -32,18 +23,21 @@ const char* DeterminatorParseException::what() const throw()
 class ScopedXmlAttributeGetter 
 {
     public:
-        ScopedXmlAttributeGetter(const pugi::xml_node& basenode) :m_basenode(basenode) {}
+        ScopedXmlAttributeGetter(const pugi::xml_node& basenode, map<string, string> &attributemap) 
+        :m_basenode(basenode),m_attributemap(attributemap) {}
         string get(const string& attribute_name) const {
             pugi::xml_attribute xml_attribute = m_basenode.attribute(attribute_name.c_str());
             if (!xml_attribute) {
                 string error_text = string("In node '") + m_basenode.name() + "'";
                 error_text += " attribute '" + attribute_name + "' was not found";
-                throw ConditionParseException(error_text);
+                throw DeterminatorParseException(error_text);
             }
+            m_attributemap.insert({attribute_name, xml_attribute.value()});
             return xml_attribute.value();
         }
     private:
         const pugi::xml_node& m_basenode;
+        map<string, string> &m_attributemap;
 };
 
 BaseDeterminatorItem::BaseDeterminatorItem(const string& name)
@@ -54,8 +48,17 @@ BaseDeterminatorItem::BaseDeterminatorItem(const string& name)
 BaseDeterminatorItem::BaseDeterminatorItem(const pugi::xml_node& basenode, const string& name)
 :item_name(name)
 {
-    ScopedXmlAttributeGetter a(basenode);
+    ScopedXmlAttributeGetter a(basenode, attributes);
     display_name = a.get("display_name");
+}
+        
+bool BaseDeterminatorItem::match() const
+{
+    return true;
+}
+
+void BaseDeterminatorItem::execute() const
+{
 }
 
 /*
@@ -80,7 +83,7 @@ BaseDeterminatorItemPtr XplCondition::createNew(const pugi::xml_node& basenode) 
 
 void XplCondition::parseFromXml(const pugi::xml_node& basenode) 
 {
-    ScopedXmlAttributeGetter helper(basenode);
+    ScopedXmlAttributeGetter helper(basenode, attributes);
     msg_type        = helper.get("msg_type");
     source_vendor   = helper.get("source_vendor");
     source_device   = helper.get("source_device");
@@ -94,7 +97,7 @@ void XplCondition::parseFromXml(const pugi::xml_node& basenode)
     for(const auto node : basenode) {
         if (node.name() == string("param")) {
             struct parameter p;
-            ScopedXmlAttributeGetter pa(node);
+            ScopedXmlAttributeGetter pa(node, attributes);
             p.name  = pa.get("name");
             p.op    = pa.get("operator");
             p.value = pa.get("value");
@@ -120,8 +123,7 @@ string XplCondition::toString() const
     }
     return ret;
 }
-
-
+        
 GlobalCondition::GlobalCondition() 
 :BaseDeterminatorItem("globalCondition")
 {
@@ -140,9 +142,10 @@ BaseDeterminatorItemPtr GlobalCondition::createNew(const pugi::xml_node& basenod
 
 void GlobalCondition::parseFromXml(const pugi::xml_node& basenode) 
 {
-    name  = basenode.attribute("name").value();
-    op    = basenode.attribute("operator").value();
-    value = basenode.attribute("value").value();
+    ScopedXmlAttributeGetter helper(basenode, attributes);
+    name  = helper.get("name");
+    op    = helper.get("operator");
+    value = helper.get("value");
 }
         
 string GlobalCondition::toString() const 
@@ -172,7 +175,8 @@ BaseDeterminatorItemPtr GlobalChanged::createNew(const pugi::xml_node& basenode)
 
 void GlobalChanged::parseFromXml(const pugi::xml_node& basenode) 
 {
-    name  = basenode.attribute("name").value();
+    ScopedXmlAttributeGetter helper(basenode, attributes);
+    name  = helper.get("name");
 }
 
 string GlobalChanged::toString() const 
@@ -201,7 +205,8 @@ BaseDeterminatorItemPtr DayCondition::createNew(const pugi::xml_node& basenode) 
 
 void DayCondition::parseFromXml(const pugi::xml_node& basenode) 
 {
-    dow  = basenode.attribute("dow").value();
+    ScopedXmlAttributeGetter helper(basenode, attributes);
+    dow  = helper.get("dow");
 }
 
 string DayCondition::toString() const 
@@ -229,8 +234,9 @@ BaseDeterminatorItemPtr TimeCondition::createNew(const pugi::xml_node& basenode)
 
 void TimeCondition::parseFromXml(const pugi::xml_node& basenode) 
 {
-    op  = basenode.attribute("operator").value();
-    value = basenode.attribute("value").value();
+    ScopedXmlAttributeGetter helper(basenode, attributes);
+    op    = helper.get("operator");
+    value = helper.get("value");
 }
 
 string TimeCondition::toString() const 
@@ -245,33 +251,54 @@ string TimeCondition::toString() const
  * Determinator Actions
  */
 
-LogAction::LogAction()
-:BaseDeterminatorItem("logAction")
+void logAction::parseFromXml(const pugi::xml_node& basenode)
 {
+    ScopedXmlAttributeGetter helper(basenode, attributes);
+    logText      = helper.get("logText");
+    executeOrder = helper.get("executeOrder");
 }
 
-LogAction::LogAction(const pugi::xml_node& basenode)
-:BaseDeterminatorItem(basenode, "logAction")
-{
-    parseFromXml(basenode);
-}
-
-BaseDeterminatorItemPtr LogAction::createNew(const pugi::xml_node& basenode) const
-{
-    return BaseDeterminatorItemPtr(new LogAction(basenode));
-}
-
-void LogAction::parseFromXml(const pugi::xml_node& basenode)
-{
-    logText = basenode.attribute("logText").value();
-    executeOrder = basenode.attribute("executeOrder").value();
-}
-
-std::string LogAction::toString() const
+std::string logAction::toString() const
 {
     string ret = item_name + ":";
     ret += "\nlogText.....: " + logText;
     ret += "\nexecuteOrder: " + executeOrder;
     return ret;
+}
+
+void logAction::execute() const
+{
+    writeLog(logText, logLevel::debug);
+}
+
+//-----
+
+void xplAction::parseFromXml(const pugi::xml_node& basenode)
+{
+    ScopedXmlAttributeGetter helper(basenode, attributes);
+    executeOrder = helper.get("executeOrder");
+    msgType = helper.get("msgType");
+    msgTarget = helper.get("msgTarget");
+    msgSchema = helper.get("msgSchema");
+    
+    for(const auto node : basenode) {
+        if (node.name() == string("xplActionParam")) {
+            string expression = node.attribute("expression").value();
+        }
+    }
+}
+
+std::string xplAction::toString() const
+{
+    string ret = item_name + ":";
+    ret += "\nexecuteOrder: " + executeOrder;
+    ret += "\nmsgType.....: " + msgType;
+    ret += "\nmsgTarget...: " + msgTarget;
+    ret += "\nmsgSchema...: " + msgSchema;
+    return ret;
+}
+
+void xplAction::execute() const
+{
 }
 

@@ -13,6 +13,10 @@
         <xplActionParam expression="level=30" />
         <xplActionParam expression="fade-rate=30" />
       </xplAction>
+      <logAction display_name="logAction"
+        logText="text to log" 
+        executeOrder="nnn"
+      />
     </output>
   </determinator>
 </xplDeterminator>

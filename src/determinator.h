@@ -4,13 +4,19 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <thread>
 
 class Determinator
 {
     public:
+        explicit Determinator();
+        virtual ~Determinator();
+
         enum class match_type { ALL, ANY };
 
         void printDeterminator() const;
+
+        void execute();
 
         std::string guid;
         std::string name;
@@ -20,6 +26,12 @@ class Determinator
         
         std::multimap<std::string, BaseDeterminatorItemPtr> inputs;
         std::multimap<std::string, BaseDeterminatorItemPtr> outputs;
+
+    private:
+        bool checkInputs() const;
+        void executeOutputs() const;
+        
+        std::unique_ptr<std::thread> mExecuteThread;
 };
 
 class DeterminatorXmlParser

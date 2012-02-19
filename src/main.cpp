@@ -16,17 +16,26 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <signal.h>
+#include <boost/program_options.hpp>
 #include "log.h"
-#include "xplcache.h"
 #include "devicemanager.h"
 #include "xhcp.h"
 #include "recurring_timer.h"
+#include "xplhandler.h"
+#include "xplcache.h"
 
 // load globas and give them their space to live
 #include "globals.h"
 
 using boost::filesystem::path;
 using boost::filesystem::initial_path;
+using boost::program_options::options_description;
+using boost::program_options::variables_map;
+using boost::program_options::store;
+using boost::program_options::parse_command_line;
+using boost::program_options::notify;
+using std::cout;
+using std::endl;
 
 path xPLHalRootFolder;
 path DataFileFolder;
@@ -35,7 +44,6 @@ path rulesFolder;
 
 xPLCacheClass *xPLCache;
 xPLHandler *xPL;
-xPLMessageQueueClass *xPLMessageQueue;
 
 static boost::asio::io_service* g_ioservice = nullptr;
 
@@ -43,22 +51,20 @@ class XplHalApplication
 {
     public:
         XplHalApplication() 
-        :mXplMessageQueue(new xPLMessageQueueClass)
-        ,mXplCache(new xPLCacheClass)
+        :mXplCache(new xPLCacheClass)
         ,mDeviceManager(mXplCache)
         ,mXHCPServer(new XHCPServer(m_ioservice, &mDeviceManager))
-        ,mXpl(new xPLHandler( boost::asio::ip::host_name() ))
+        ,mXpl(new xPLHandler(m_ioservice, boost::asio::ip::host_name() ))
         ,mTimerListAllObjects(m_ioservice,      boost::posix_time::seconds(60), true)
         ,mTimerFlushExpiredEntries(m_ioservice, boost::posix_time::minutes(5), true)
         {
-            mDeviceManager.m_sigSendXplMessage.connect(boost::bind(&xPLMessageQueueClass::add, mXplMessageQueue, _1));
+            mDeviceManager.m_sigSendXplMessage.connect(boost::bind(&xPLHandler::sendMessage, mXpl, _1));
             mXpl->m_sigRceivedXplMessage.connect(boost::bind(&DeviceManager::processXplMessage, &mDeviceManager, _1));
             installTimer();
 
             /* set global variables */
             xPLCache = mXplCache;
             xPL = mXpl;
-            xPLMessageQueue = mXplMessageQueue;
 
             writeLog( "initialized", logLevel::all );
         }
@@ -97,7 +103,7 @@ class XplHalApplication
         int exec()
         {
             // force everyone to send their configuration so that we start up to date...
-            xPLMessageQueue->add(xPLMessagePtr( new xPLMessage(xPL_MESSAGE_COMMAND, "*", "config", "current", {{"command", "request"}}) ));
+            mXpl->sendMessage(xPLMessagePtr( new xPLMessage(xPL_MESSAGE_COMMAND, "*", "config", "current", {{"command", "request"}}) ));
 
             writeLog( "started, run mainloop", logLevel::all );
             m_ioservice.run();
@@ -113,7 +119,6 @@ class XplHalApplication
     private:
         static boost::asio::io_service m_ioservice;
 
-        xPLMessageQueueClass *mXplMessageQueue;
         xPLCacheClass        *mXplCache;
         DeviceManager    mDeviceManager;
         XHCPServer      *mXHCPServer;
@@ -145,6 +150,20 @@ int main(int UNUSED argc, char** UNUSED argv)
     rulesFolder        = DataFileFolder   / "determinator";
     //vendorFileFolder   = DataFileFolder / "vendors";
     //ConfigFileFolder   = DataFileFolder / "configs";
+
+    options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "help message")
+        ("datadir","location of data directory");
+
+    variables_map vm;
+    store(parse_command_line(argc, argv, desc), vm);
+    notify(vm);
+
+    if (vm.count("help")) {
+        cout << desc << endl;
+        return 1;
+    }
 
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
