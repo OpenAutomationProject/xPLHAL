@@ -26,6 +26,14 @@ typedef std::shared_ptr<const BaseDeterminatorItem> BaseDeterminatorItemConstPtr
 class BaseDeterminatorItem
 {
     public:
+        struct di_attribute {
+            std::shared_ptr<boost::regex> re;
+            std::string                   value;
+        };
+
+        typedef std::map<std::string, struct di_attribute> attribute_t;
+
+    public:
         BaseDeterminatorItem(const std::string& name);
         BaseDeterminatorItem(const pugi::xml_node& basenode, const std::string& name);
 
@@ -35,19 +43,10 @@ class BaseDeterminatorItem
         virtual void parseFromXml(const pugi::xml_node& basenode);
         virtual bool match() const;
         virtual void execute() const;
-
-        struct di_attribute {
-            std::shared_ptr<boost::regex> re;
-            std::string                   value;
-        };
-
-        std::string item_name;
-
         std::string getAttribute(const std::string& attrname) const;
 
-        std::map<std::string, struct di_attribute> attributes;
-
-
+        std::string item_name;
+        attribute_t attributes;
 
         //boost::signal2::signal<void ()> sigChanged;
 };

@@ -13,7 +13,6 @@ BOOST_AUTO_TEST_CASE( loadDeterminators )
 {
     DeterminatorManager dm("determinators");
     dm.loadDeterminators();
-
 }
 
 BOOST_AUTO_TEST_SUITE_END();
