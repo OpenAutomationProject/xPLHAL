@@ -19,6 +19,7 @@
 #include <boost/program_options.hpp>
 #include "log.h"
 #include "devicemanager.h"
+#include "determinator_manager.h"
 #include "xhcp.h"
 #include "recurring_timer.h"
 #include "xplhandler.h"
@@ -55,11 +56,14 @@ class XplHalApplication
         ,mDeviceManager(mXplCache)
         ,mXHCPServer(new XHCPServer(m_ioservice, &mDeviceManager))
         ,mXpl(new xPLHandler(m_ioservice, boost::asio::ip::host_name() ))
+        ,mDeterminatorManager("data")
         ,mTimerListAllObjects(m_ioservice,      boost::posix_time::seconds(60), true)
         ,mTimerFlushExpiredEntries(m_ioservice, boost::posix_time::minutes(5), true)
+
         {
             mDeviceManager.m_sigSendXplMessage.connect(boost::bind(&xPLHandler::sendMessage, mXpl, _1));
             mXpl->m_sigRceivedXplMessage.connect(boost::bind(&DeviceManager::processXplMessage, &mDeviceManager, _1));
+            mXpl->m_sigRceivedXplMessage.connect(mDeterminatorManager.m_sigRceivedXplMessage);
             installTimer();
 
             /* set global variables */
@@ -123,6 +127,7 @@ class XplHalApplication
         DeviceManager    mDeviceManager;
         XHCPServer      *mXHCPServer;
         xPLHandler      *mXpl;
+        DeterminatorManager mDeterminatorManager;
 
         RecurringTimer mTimerListAllObjects;
         RecurringTimer mTimerFlushExpiredEntries;

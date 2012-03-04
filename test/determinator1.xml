@@ -17,6 +17,7 @@
         logText="text to log" 
         executeOrder="nnn"
       />
+      <stopAction display_name="stopAction" executeOrder="Z" />
     </output>
   </determinator>
 </xplDeterminator>

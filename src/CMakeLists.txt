@@ -17,12 +17,18 @@
 project(xPLHAL)
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_CXX_FLAGS "-g -std=c++0x")
-#set(CMAKE_CXX_FLAGS "-g -Os -std=c++0x")
+file(GLOB_RECURSE Action_sources ./actions/*.cpp)
+file(GLOB_RECURSE Condition_sources ./conditions/*.cpp)
+
+#set(CMAKE_CXX_FLAGS "-g -std=c++0x")
+set(CMAKE_CXX_FLAGS "-g -Os -std=c++0x")
 set(xPLHAL_SRCS xplmessagequeue.cpp devicemanager.cpp 
     xplhandler.cpp xplcache.cpp xhcpthread.cpp log.cpp 
     xhcp.cpp xplmessage.cpp recurring_timer.cpp main.cpp pugixml.cpp
-    determinatoritems.cpp determinator.cpp)
+    determinatoritems.cpp determinator.cpp determinator_manager.cpp
+    ${Action_sources} ${Condition_sources})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(xPLHAL ${xPLHAL_SRCS})
 #message(STATUS "Boost_LIBRARIES=${Boost_LIBRARIES}")

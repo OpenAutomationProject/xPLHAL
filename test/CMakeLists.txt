@@ -21,10 +21,13 @@ include(CTest)
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
 file(GLOB_RECURSE UnitTests_sources *.cpp)
+file(GLOB_RECURSE Action_sources ../src/actions/*.cpp)
+file(GLOB_RECURSE Condition_sources ../src/conditions/*.cpp)
 
 #set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplcache.cpp ../src/xplhandler.cpp ../src/xplmessagequeue.cpp)
 set(UnitTest_tsrc ../src/devicemanager.cpp ../src/xplmessage.cpp ../src/determinator.cpp 
-                  ../src/determinatoritems.cpp ../src/pugixml.cpp)
+                  ../src/determinatoritems.cpp ../src/pugixml.cpp ../src/determinator_manager.cpp
+                  ${Action_sources} ${Condition_sources})
 
 add_executable(test_runner ${UnitTests_sources} ${UnitTest_tsrc})
 
@@ -32,7 +35,7 @@ include_directories(../src /usr/local/include)
 
 enable_testing()
 
-set(CMAKE_CXX_FLAGS "-g -std=c++0x -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS "-g -Os -std=c++0x -fprofile-arcs -ftest-coverage")
 #set(xPLHALTest_SRCS test_test.cpp test_xplcache.cpp)
 #add_executable(test_runner ${xPLHALTest_SRCS})
 #message(STATUS "Boost_LIBRARIES=${Boost_LIBRARIES}")

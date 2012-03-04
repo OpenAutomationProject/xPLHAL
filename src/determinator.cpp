@@ -4,6 +4,19 @@
 #include <typeinfo>
 #include <memory>
 #include <functional>
+#include <algorithm>
+#include <thread>
+#include <future>
+#include "conditions/xplCondition.h"
+#include "conditions/globalCondition.h"
+#include "conditions/globalChanged.h"
+#include "conditions/dayCondition.h"
+#include "conditions/timeCondition.h"
+#include "actions/logAction.h"
+#include "actions/xplAction.h"
+#include "actions/delayAction.h"
+#include "actions/globalAction.h"
+#include "actions/stopAction.h"
 
 using std::string;
 using std::vector;
@@ -35,17 +48,20 @@ void Determinator::printDeterminator() const
 
 DeterminatorXmlParser::DeterminatorXmlParser(const string& filename) 
 {
-    registerCondition(BaseDeterminatorItemConstPtr(new XplCondition));
-    registerCondition(BaseDeterminatorItemConstPtr(new GlobalCondition));
-    registerCondition(BaseDeterminatorItemConstPtr(new GlobalChanged));
-    registerCondition(BaseDeterminatorItemConstPtr(new DayCondition));
-    registerCondition(BaseDeterminatorItemConstPtr(new TimeCondition));
+    registerCondition(BaseDeterminatorItemConstPtr(new xplCondition));
+    registerCondition(BaseDeterminatorItemConstPtr(new globalCondition));
+    registerCondition(BaseDeterminatorItemConstPtr(new globalChanged));
+    registerCondition(BaseDeterminatorItemConstPtr(new dayCondition));
+    registerCondition(BaseDeterminatorItemConstPtr(new timeCondition));
 
     registerAction(BaseDeterminatorItemConstPtr(new logAction));
     registerAction(BaseDeterminatorItemConstPtr(new xplAction));
+    registerAction(BaseDeterminatorItemConstPtr(new delayAction));
+    registerAction(BaseDeterminatorItemConstPtr(new globalAction));
+    registerAction(BaseDeterminatorItemConstPtr(new stopAction));
 
     pugi::xml_parse_result result = m_doc.load_file(filename.c_str());
-    cerr << "Load result: " << result.description() << "\n";
+//    cerr << "Load result: " << result.description() << "\n";
 }
 
 void DeterminatorXmlParser::registerCondition(BaseDeterminatorItemConstPtr condition) 
@@ -95,7 +111,7 @@ Determinator DeterminatorXmlParser::parse()
                 }
             }
 
-            d.printDeterminator();
+            //d.printDeterminator();
             return d;
         }
 
@@ -125,8 +141,8 @@ Determinator::Determinator()
 
 Determinator::~Determinator()
 {
-    if (mExecuteThread) {
-        mExecuteThread->join();
+    if (!mExecFutures.empty()) {
+        mExecFutures[0].wait();
     }
 }
         
@@ -142,23 +158,29 @@ bool Determinator::checkInputs() const
     return (input_match_type == match_type::ALL);
 }
 
-void Determinator::executeOutputs() const
+bool Determinator::executeOutputs() const
 {
     std::multimap<string, BaseDeterminatorItemPtr> orderd_outputs;
     for (auto output : outputs) {
         string execOrder;
         auto execOrderIter = output.second->attributes.find("executeOrder");
         if (execOrderIter != output.second->attributes.end()) {
-            execOrder = execOrderIter->second;
+            execOrder = execOrderIter->second.value;
         }
         orderd_outputs.insert({execOrder, output.second});
     }
 
-    for (auto output : orderd_outputs) {
-        cerr << "execute output:" << output.second->display_name << endl;
-        output.second->execute();
+    try {
+        for (auto output : orderd_outputs) {
+            cerr << "execute output:" << output.second->getAttribute("display_name") << endl;
+            output.second->execute();
+        }
+    } catch (const AbortDeterminatorExecutionException &e) {
+        return false;
     }
+    return true;
 }
+
 
 /**
  * Check if input conditions are met, then start a thread to execute actions
@@ -166,11 +188,12 @@ void Determinator::executeOutputs() const
 void Determinator::execute()
 {
     if (checkInputs()) {
-        if (mExecuteThread) {
-            mExecuteThread->join();
+        if (mExecFutures.empty() || mExecFutures[0].valid()) {
+            mExecFutures.erase(mExecFutures.begin(), mExecFutures.end());
+            cerr << "determinator start thread" << endl;
+            mExecFutures.push_back(std::async(std::launch::async, std::bind(&Determinator::executeOutputs, this)));
+            cerr << "determinator start thread" << endl;
         }
-        cerr << "determinator start thread" << endl;
-        mExecuteThread.reset(new thread(bind(&Determinator::executeOutputs, this)));
     }
 }
 

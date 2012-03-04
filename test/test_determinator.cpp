@@ -1,6 +1,5 @@
 #include "../src/determinator.h"
-#define BOOST_TEST_MODULE "Determinator"
-#define BOOST_TEST_ALTERNATIVE_INIT_API 1
+#define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 #include <mockpp/visiting/CountedVisitableMethod.h>
 
@@ -14,7 +13,7 @@ BOOST_AUTO_TEST_SUITE(DeterminatorSuite);
 
 BOOST_AUTO_TEST_CASE( parse )
 {
-    DeterminatorXmlParser parser("determinatorDesc.xml");
+    DeterminatorXmlParser parser("determinatorAll.xml");
     Determinator d(parser.parse());
 
     BOOST_CHECK(d.name == "rule-name");
@@ -27,6 +26,7 @@ BOOST_AUTO_TEST_CASE( parse )
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "dayCondition:\n"
+                "display_name: rule-name\n"
                 "dow: 0000000");
     }
     {   
@@ -34,6 +34,7 @@ BOOST_AUTO_TEST_CASE( parse )
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "globalChanged:\n"
+                "display_name: rule-name\n"
                 "name: global-name");
     }
     {   
@@ -41,8 +42,9 @@ BOOST_AUTO_TEST_CASE( parse )
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "globalCondition:\n"
+                "display_name: condition-name\n"
                 "name: global-name\n"
-                "operator: =|!=|>|<|>=|<=\n"
+                "operator: >=\n"
                 "value: global-value");
     }
     {   
@@ -50,33 +52,36 @@ BOOST_AUTO_TEST_CASE( parse )
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "timeCondition:\n"
-                "operator: =|!=|<|>|<=|>=\n"
-                "value...: HH:mm");
+                "display_name: display-name\n"
+                "operator: !=\n"
+                "value: 19:24");
     }
     {   
         auto c = d.inputs.find("xplCondition");
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "xplCondition:\n"
-                "msg_type: cmnd|stat|trig|*\n"
-                "source_vendor: vendor-name|*\n"
-                "source_device: device-name|*\n"
-                "source_instance: instance-name|*\n"
-                "target_vendor: vendor-name|*\n"
-                "target_device: device-name|*\n"
-                "target_instance: instance-name|*\n"
-                "schema_class: schema-class|*\n"
-                "schema_type: schema-type|*\n"
-                "parameter: parameter-name=|!=|>|<|>=|<=parameter-value");
+                "display_name: condition-name\n"
+                "msg_type: cmnd\n"
+                "schema_class: class\n"
+                "schema_type: type\n"
+                "source_device: device\n"
+                "source_instance: instance\n"
+                "source_vendor: pnxs\n"
+                "target_device: device\n"
+                "target_instance: instance\n"
+                "target_vendor: vendor\n"
+                "parameter: parameter-name<=parameter-value");
     }
     
     {   
         auto c = d.outputs.find("logAction");
-        BOOST_CHECK(c != d.inputs.end());
+        BOOST_CHECK(c != d.outputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "logAction:\n"
-                "logText.....: text to log\n"
-                "executeOrder: nnn");
+                "display_name: display-name\n"
+                "executeOrder: nnn\n"
+                "logText: text to log");
     }
 }
 
@@ -90,6 +95,7 @@ BOOST_AUTO_TEST_CASE( parse1 )
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "globalCondition:\n"
+                "display_name: Gobal variable is 1\n"
                 "name: TERRARIUM_ZUSTAND\n"
                 "operator: =\n"
                 "value: 1");
@@ -106,15 +112,16 @@ BOOST_AUTO_TEST_CASE( parse2 )
         BOOST_CHECK(c != d.inputs.end());
         BOOST_CHECK(c->second->toString() == 
                 "xplCondition:\n"
+                "display_name: Klingel Erna gedrueckt\n"
                 "msg_type: trig\n"
-                "source_vendor: pnxs\n"
-                "source_device: ppdev\n"
-                "source_instance: default\n"
-                "target_vendor: *\n"
-                "target_device: *\n"
-                "target_instance: *\n"
                 "schema_class: sensor\n"
                 "schema_type: basic\n"
+                "source_device: ppdev\n"
+                "source_instance: default\n"
+                "source_vendor: pnxs\n"
+                "target_device: *\n"
+                "target_instance: *\n"
+                "target_vendor: *\n"
                 "parameter: device=7\n"
                 "parameter: type=input\n"
                 "parameter: current=1");

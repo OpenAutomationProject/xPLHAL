@@ -25,7 +25,6 @@ using std::mutex;
 using std::lock_guard;
         
 XplMessageQueue::XplMessageQueue()
-:mPipeFD({0})
 {
     pipe(mPipeFD);
 }

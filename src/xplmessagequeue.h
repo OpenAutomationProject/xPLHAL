@@ -21,6 +21,8 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <mutex>
+#include <memory>
 
 #include "xplmessage.h"
 
@@ -48,6 +50,6 @@ class XplMessageQueue
         /** \brief variable to ensure that the queue is thread save... */
         mutable std::mutex queueLock;
         std::queue<xPLMessagePtr> xPLMessages;
-        int mPipeFD[2];
+        int mPipeFD[2];// = {0};
 };
 

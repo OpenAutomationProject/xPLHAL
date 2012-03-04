@@ -1,5 +1,6 @@
 #include "../src/devicemanager.h"
-#define BOOST_TEST_MODULE "DeviceManager"
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 #include <mockpp/visiting/CountedVisitableMethod.h>
 

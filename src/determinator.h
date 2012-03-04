@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <future>
 
 class Determinator
 {
@@ -29,10 +30,13 @@ class Determinator
 
     private:
         bool checkInputs() const;
-        void executeOutputs() const;
-        
-        std::unique_ptr<std::thread> mExecuteThread;
+        bool executeOutputs() const;
+
+        std::vector<std::future<bool>> mExecFutures;
 };
+
+typedef std::shared_ptr<Determinator> DeterminatorPtr;
+typedef std::shared_ptr<const Determinator> DeterminatorConstPtr;
 
 class DeterminatorXmlParser
 {

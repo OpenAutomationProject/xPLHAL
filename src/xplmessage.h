@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <string>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 extern "C" {
 #define COMMON_TYPES
@@ -102,6 +102,6 @@ class xPLMessage
         operator std::string() const;
         bool operator==(const xPLMessage& right) const;
 };
-typedef boost::shared_ptr<xPLMessage> xPLMessagePtr;
+typedef std::shared_ptr<xPLMessage> xPLMessagePtr;
 
 std::ostream& operator<<(std::ostream& os, const xPLMessage& msg);
