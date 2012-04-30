@@ -20,6 +20,11 @@
 #include <boost/asio.hpp>
 #include <boost/signals2/signal.hpp>
 
+/**
+ * \brief Self-repeating timer
+ * Based on the ASIO deadline_timer which only expires once this class
+ * implements a recurring timer.
+ */
 class RecurringTimer
 {
     public:
@@ -29,6 +34,11 @@ class RecurringTimer
         void start();
         void stop();
         
+        /**
+         * \brief Expired signal to connect to
+         * This member is public to make it more easy to connect to signal.
+         * So only connect/disconnect to this signal is allowed!
+         */
         boost::signals2::signal<void (const boost::system::error_code& e)> sigExpired;
 
     private:

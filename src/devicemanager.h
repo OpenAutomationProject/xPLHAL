@@ -69,8 +69,8 @@ class DeviceManager
         
         xPLHandler::signal_t m_sigSendXplMessage;
     private:
-        boost::posix_time::ptime calculateExpireTime(int interval);
-        boost::posix_time::ptime calculateExpireTime(const std::string& string_interval, int *pInterval = 0);
+        steady_time_point calculateExpireTime(int interval);
+        steady_time_point calculateExpireTime(const std::string& string_interval, int *pInterval = 0);
 
         IxPLCacheClass*   m_xPLCache;
         std::map<std::string, xPLDevice> mDeviceMap;

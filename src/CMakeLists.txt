@@ -21,7 +21,7 @@ file(GLOB_RECURSE Action_sources ./actions/*.cpp)
 file(GLOB_RECURSE Condition_sources ./conditions/*.cpp)
 
 #set(CMAKE_CXX_FLAGS "-g -std=c++0x")
-set(CMAKE_CXX_FLAGS "-g -Os -std=c++0x")
+set(CMAKE_CXX_FLAGS "-g -O2 -std=c++0x")
 set(xPLHAL_SRCS xplmessagequeue.cpp devicemanager.cpp 
     xplhandler.cpp xplcache.cpp xhcpthread.cpp log.cpp 
     xhcp.cpp xplmessage.cpp recurring_timer.cpp main.cpp pugixml.cpp

@@ -18,6 +18,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
+#include <ctime>
 
 #include "globals.h"
 #include "xplcache.h"
@@ -36,6 +37,8 @@ using boost::algorithm::to_lower_copy;
 using boost::asio::ip::tcp;
 using std::string;
 using std::vector;
+
+namespace ba = boost::asio;
 
 XHCPThread::XHCPThread( socket_ptr socket, DeviceManager* dm )
      : m_stoprequested(false)
@@ -120,11 +123,11 @@ void XHCPThread::run()
     // commands[ "SETSETTING"        ] = &XHCPThread::;
     commands[ "QUIT"              ] = &XHCPThread::commandQuit;
 
-    boost::asio::streambuf sb;
+    ba::streambuf sb;
     boost::system::error_code error; 
     string greeting( "200 CHRISM-XPLHAL.SERVER1 Version 0.0 alpha XHCP 1.5 ready\r\n" );
 
-    boost::asio::write(*sock, boost::asio::buffer(greeting));
+    ba::write(*sock, ba::buffer(greeting));
 
     while (!quit) {
         // const int TimeoutInCommand =   5 * 1000; // during transmission of an command
@@ -135,17 +138,17 @@ void XHCPThread::run()
                 ||    ( inMultilineRequest && endDifferent(data, "\r\n.\r\n") ) ) {
             //int Timeout = (""==data) ? TimeoutExCommand : TimeoutInCommand;
 
-            std::size_t n = boost::asio::read_until(*sock, sb, '\n');
-            boost::asio::streambuf::const_buffers_type bufs = sb.data();
+            std::size_t n = ba::read_until(*sock, sb, '\n');
+            ba::streambuf::const_buffers_type bufs = sb.data();
             string newData(
-                    boost::asio::buffers_begin(bufs),
-                    boost::asio::buffers_begin(bufs) + n);
+                    ba::buffers_begin(bufs),
+                    ba::buffers_begin(bufs) + n);
             sb.consume(n);
             /*
                string newData;
-               size_t length = sock->read_some(boost::asio::buffer(newData), error);
+               size_t length = sock->read_some(ba::buffer(newData), error);
 
-               if (error == boost::asio::error::eof)
+               if (error == ba::error::eof)
                break; // Connection closed cleanly by peer.
                else if (error)
                throw boost::system::system_error(error); // Some other error.*/
@@ -164,7 +167,7 @@ void XHCPThread::run()
             string result = (this->*multilineRequestHandler)( data );
             writeLog( "Result:\n[\n" + result + "]", logLevel::debug );
             //socket.write( result );
-            boost::asio::write(*sock, boost::asio::buffer(result));
+            ba::write(*sock, ba::buffer(result));
         } 
         else {
             data.erase( data.size()-2 ); // chop
@@ -185,7 +188,7 @@ void XHCPThread::run()
             writeLog( "Request: [" + data   + "]", logLevel::debug );
             string result = (this->*command)( parameters );
             writeLog( "Result:\n[\n" + result + "]", logLevel::debug );
-            boost::asio::write(*sock, boost::asio::buffer(result));
+            ba::write(*sock, ba::buffer(result));
         }
     }
 
@@ -328,6 +331,16 @@ string XHCPThread::commandListAllDevices( const string& parameter )
   return result;
 }
 
+template<typename D, typename F>
+std::string date2String(const D& date, const F& format)
+{
+    char tmp[50];
+    std::time_t time_ = D::clock::to_time_t(date);
+    int r = strftime(tmp, sizeof(tmp)-1, format, std::localtime(&time_));
+    tmp[r] = 0;
+    return tmp;
+}
+
 string XHCPThread::commandListDevices( const string& parameter ) 
 {
   writeLog( "XHCPThread::commandListGlobals( " + parameter + " )", logLevel::debug );
@@ -345,7 +358,7 @@ string XHCPThread::commandListDevices( const string& parameter )
     if( showDevice && !device.Suspended )
     {
       result +=                       device.VDI        + tab;
-      result += timeConverter(        device.Expires  ) + tab;
+      result += date2String(device.Expires, "%d.%m.%Y %H:%M:%S");
       result += lexical_cast<string>( device.Interval ) + tab;
       result += (device.ConfigType    ? "Y" : "N")      + tab;
       result += (device.ConfigDone    ? "Y" : "N")      + tab;

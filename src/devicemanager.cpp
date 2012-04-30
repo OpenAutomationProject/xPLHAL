@@ -28,10 +28,6 @@ using boost::algorithm::token_compress_on;
 #include "devicemanager.h"
 #include "i_xplcache.h"
 
-using boost::posix_time::ptime;
-using boost::posix_time::second_clock;
-using boost::posix_time::minutes;
-
 using std::string;
 using std::vector;
 
@@ -138,7 +134,7 @@ void DeviceManager::processConfigList( const xPLMessagePtr message )
         // A config list turned up that we haven't asked for...
         // create a new device...
         int interval = 5;
-        ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
+        steady_time_point expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
         device.VDI            = source;        // vendor / device / instance = unique id
         device.ConfigDone     = false;         // false = new waiting check, true = sent/not required
         device.ConfigMissing  = false;         // true = no config file, no response from device, false = have/waiting config
@@ -188,7 +184,7 @@ void DeviceManager::processConfigList( const xPLMessagePtr message )
     }
 }
 
-ptime DeviceManager::calculateExpireTime(const string& string_interval, int *pInterval)
+steady_time_point DeviceManager::calculateExpireTime(const string& string_interval, int *pInterval)
 {
     int interval = string_interval.empty() ? atoi(string_interval.c_str()) : 5; // default to 5 minutes
     if (pInterval) {
@@ -197,9 +193,9 @@ ptime DeviceManager::calculateExpireTime(const string& string_interval, int *pIn
     return calculateExpireTime(interval);
 }
 
-ptime DeviceManager::calculateExpireTime(int interval)
+steady_time_point DeviceManager::calculateExpireTime(int interval)
 {
-    return second_clock::local_time() + minutes( 2* interval + 1 );
+    return std::chrono::steady_clock::now() + std::chrono::minutes( 2* interval + 1 );
 }
 
 void DeviceManager::processConfigHeartBeat( const xPLMessagePtr message )
@@ -212,7 +208,7 @@ void DeviceManager::processConfigHeartBeat( const xPLMessagePtr message )
         // this handles a new application that identifies itself with a hbeat straight away.
         // it must either be storing it's config locally, can't be configured, or is configured somewhere else.
         int interval = 5;
-        ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
+        steady_time_point expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
         device.VDI            = source;       // vendor / device / instance = unique id
         device.ConfigDone     = false;        // false = new waiting check, true = sent/not required
         device.ConfigMissing  = true;         // true = no config file, no response from device, false = have/waiting config
@@ -254,7 +250,7 @@ void DeviceManager::processCurrentConfig( const xPLMessagePtr message )
         // => just treat it like an heartbeat
         return processConfigHeartBeat( message );
     } else {
-//        ptime expires = calculateExpireTime(device.Interval);
+//        steady_time_point expires = calculateExpireTime(device.Interval);
 //        m_xPLCache->updateEntry( "config." + source + ".expires", timeConverter(calculateExpireTime(device.Interval), false ));
         m_xPLCache->updateEntry( "config." + source + ".current", "true", false );
     }
@@ -288,7 +284,7 @@ void DeviceManager::processHeartbeat( xPLMessagePtr message )
 
     xPLDevice device = getDevice( source );
     int interval = 5;
-    ptime expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
+    steady_time_point expires = calculateExpireTime(message->getNamedValue("interval"), &interval);
     writeLog( "DeviceManager::processHeartbeat("+source+") - found ["+device.VDI+"]", logLevel::debug );
 
     if( "" == device.VDI ) {

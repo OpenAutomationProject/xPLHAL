@@ -64,16 +64,28 @@ DeterminatorXmlParser::DeterminatorXmlParser(const string& filename)
 //    cerr << "Load result: " << result.description() << "\n";
 }
 
+/**
+ * \brief register handler for XML parser
+ * this allowes to extend the parser with more conditions
+ */
 void DeterminatorXmlParser::registerCondition(BaseDeterminatorItemConstPtr condition) 
 {
     m_conditionmap[condition->item_name] = condition;
 }
 
+/**
+ * \brief register handler for XML parser
+ * this allowes to extend the parser with more actions
+ */
 void DeterminatorXmlParser::registerAction(BaseDeterminatorItemConstPtr action)
 {
     m_actionmap[action->item_name] = action;
 }
 
+/**
+ * \brief Parse the filen given in constructor
+ * \return Determinator object
+ */
 Determinator DeterminatorXmlParser::parse() 
 {
     try {

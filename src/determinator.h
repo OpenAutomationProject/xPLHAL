@@ -7,6 +7,13 @@
 #include <thread>
 #include <future>
 
+/**
+ * \brief Determinator implementation.
+ *
+ * A Determinator is configured with an XML-File. 
+ * When all input conditions are met (true) the Determinator is executed:
+ * All output actions are executed in the 'executeOrder' order.
+ */
 class Determinator
 {
     public:
@@ -15,8 +22,15 @@ class Determinator
 
         enum class match_type { ALL, ANY };
 
+        /**
+         * \brief Print Determinator in human-readable form to console
+         */
         void printDeterminator() const;
 
+        /**
+         * \brief Check if input conditions are met, then start a thread to execute actions
+         * The output-actions are executed in a seperate thread.
+         */
         void execute();
 
         std::string guid;
@@ -38,6 +52,9 @@ class Determinator
 typedef std::shared_ptr<Determinator> DeterminatorPtr;
 typedef std::shared_ptr<const Determinator> DeterminatorConstPtr;
 
+/**
+ * \brief Converts a Determinator from XML to internal Object format
+ */
 class DeterminatorXmlParser
 {
     public:

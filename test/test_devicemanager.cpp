@@ -9,6 +9,7 @@ using namespace mockpp;
 #include "devicemanager.h"
 
 #include <boost/regex.hpp>
+#include <iostream>
 
 xPLMessagePtr createXplMessage(xPL_MessageType type, const std::string& srcVDI, const std::string& dstVDI, 
                              const std::string& msgClass, const std::string& msgType, xPLMessage::namedValueList list)

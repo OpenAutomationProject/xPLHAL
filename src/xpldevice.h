@@ -18,19 +18,21 @@
 */
 
 #include <string>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
+
+typedef std::chrono::time_point<std::chrono::steady_clock> steady_time_point;
 
 struct xPLDevice
 {
-    std::string              VDI;            /** \brief vendor / device / instance = unique id                                      */
-    boost::posix_time::ptime Expires;        /** \brief time expires                                                                */
-    int                      Interval;       /** \brief current heartbeat interval                                                  */
-    bool                     ConfigType;     /** \brief true = config. false = hbeat.                                               */
-    bool                     ConfigDone;     /** \brief false = new waiting check, true = sent/not required                         */
-    bool                     WaitingConfig;  /** \brief false = waiting check or not needed, true = manual intervention             */
-    bool                     ConfigListSent; /** \brief Have we asked this device for it's config?                                  */
-    std::string              ConfigSource;   /** \brief v-d.xml / v-d.cache.xml or empty                                            */
-    bool                     ConfigMissing;  /** \brief true = no config file, no response from device, false = have/waiting config */
-    bool                     Suspended;      /** \brief lost heartbeat                                                              */
-    bool                     Current;        /** \brief asked for current                                                           */
+    std::string              VDI;            //! \brief vendor / device / instance = unique id
+    steady_time_point        Expires;        //! \brief time expires
+    int                      Interval;       //! \brief current heartbeat interval
+    bool                     ConfigType;     //! \brief true = config. false = hbeat.
+    bool                     ConfigDone;     //! \brief false = new waiting check, true = sent/not required
+    bool                     WaitingConfig;  //! \brief false = waiting check or not needed, true = manual intervention
+    bool                     ConfigListSent; //! \brief Have we asked this device for it's config?
+    std::string              ConfigSource;   //! \brief v-d.xml / v-d.cache.xml or empty
+    bool                     ConfigMissing;  //! \brief true = no config file, no response from device, false = have/waiting config */
+    bool                     Suspended;      //! \brief lost heartbeat
+    bool                     Current;        //! \brief asked for current
 };

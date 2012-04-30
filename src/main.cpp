@@ -48,6 +48,9 @@ xPLHandler *xPL;
 
 static boost::asio::io_service* g_ioservice = nullptr;
 
+/**
+ * \brief Main application
+ */
 class XplHalApplication
 {
     public:
@@ -86,6 +89,9 @@ class XplHalApplication
             writeLog( "main: xPL shutdown", logLevel::all );
         }
 
+        /**
+         * \brief Installs timer while constructing
+         */
         void installTimer()
         {
             mTimerListAllObjects.sigExpired.connect([](const boost::system::error_code& e) {
@@ -99,11 +105,18 @@ class XplHalApplication
             });
         }
 
+        /**
+         * \brief quit application
+         */
         static void stop() 
         {
             m_ioservice.stop();
         }
 
+
+        /**
+         * \brief runs the Application (called from main)
+         */
         int exec()
         {
             // force everyone to send their configuration so that we start up to date...

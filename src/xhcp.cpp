@@ -22,8 +22,9 @@
 #include "xhcp.h"
 
 using boost::asio::ip::tcp;
+namespace a = boost::asio;
 
-XHCPServer::XHCPServer(boost::asio::io_service& io, DeviceManager* dm)
+XHCPServer::XHCPServer(a::io_service& io, DeviceManager* dm)
 :m_io(io)
 ,m_acceptor(io, tcp::endpoint(tcp::v4(), 3865))
 ,m_dm(dm)
