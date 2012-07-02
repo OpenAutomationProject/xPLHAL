@@ -24,6 +24,7 @@
 #include <mutex>
 
 #include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
 #include "i_xplcache.h"
 
 
@@ -70,6 +71,7 @@ class xPLCacheClass: public IxPLCacheClass
          *         the CacheEntry with fast lookup. */
         typedef std::map< std::string, CacheEntry > cachemap_t;
         cachemap_t mCache; /**< \brief The cache itself. */
+        const boost::filesystem::path& mDataFileFolder;
 
         /** \brief variable to lock write operations on the cache for safe
          *        multithreading operation. */
@@ -100,7 +102,7 @@ class xPLCacheClass: public IxPLCacheClass
         };
 
     public:
-        xPLCacheClass();
+        xPLCacheClass(const boost::filesystem::path& dataFileFolder);
 
         /** \returns true if the element name exists. */
         bool exists( const std::string& name ) const { 

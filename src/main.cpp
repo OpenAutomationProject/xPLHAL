@@ -41,15 +41,15 @@ using std::cout;
 using std::endl;
 
 using namespace std::placeholders;
-path xPLHalRootFolder;
-path DataFileFolder;
-path ScriptEngineFolder;
-path rulesFolder;
 
 xPLCacheClass *xPLCache;
-xPLHandler *xPL;
 
-static boost::asio::io_service* g_ioservice = nullptr;
+struct filefolders {
+    path dataFileFolder;
+    path xPLHalRootFolder;
+    path scriptEngineFolder;
+    path rulesFolder;
+};
 
 /**
  * \brief Main application
@@ -57,8 +57,8 @@ static boost::asio::io_service* g_ioservice = nullptr;
 class XplHalApplication
 {
     public:
-        XplHalApplication() 
-        :mXplCache(new xPLCacheClass)
+        XplHalApplication(struct filefolders& folders) 
+        :mXplCache(new xPLCacheClass(folders.dataFileFolder))
         ,mDeviceManager(mXplCache)
         ,mXHCPServer(new XHCPServer(m_ioservice, &mDeviceManager))
         ,mXpl(new xPLHandler(m_ioservice, boost::asio::ip::host_name() ))
@@ -74,7 +74,7 @@ class XplHalApplication
 
             /* set global variables */
             xPLCache = mXplCache;
-            xPL = mXpl;
+            //xPL = mXpl;
 
             writeLog( "initialized", logLevel::all );
         }
@@ -164,11 +164,12 @@ void handle_signal(int signal)
  */
 int main(int UNUSED argc, char** UNUSED argv)
 {
+    struct filefolders folders;
     /** Make sure the necessary infrastructure exists: */
-    xPLHalRootFolder   = initial_path();
-    DataFileFolder     = xPLHalRootFolder / "data";
-    ScriptEngineFolder = DataFileFolder   / "scripts";
-    rulesFolder        = DataFileFolder   / "determinator";
+    folders.xPLHalRootFolder   = current_path();
+    folders.dataFileFolder     = folders.xPLHalRootFolder / "data";
+    folders.scriptEngineFolder = folders.dataFileFolder   / "scripts";
+    folders.rulesFolder        = folders.dataFileFolder   / "determinator";
     //vendorFileFolder   = DataFileFolder / "vendors";
     //ConfigFileFolder   = DataFileFolder / "configs";
 
@@ -192,35 +193,35 @@ int main(int UNUSED argc, char** UNUSED argv)
     // FIXME : add exception handling for directory operations!!!
     if(false) {
         //FIXME if( !QDir::setCurrent( xPLHalRootFolder.path() ) )
-        writeLog( "Error changing to working directory \"" + xPLHalRootFolder.string() + "\"!", logLevel::error );
+        writeLog( "Error changing to working directory \"" + folders.xPLHalRootFolder.string() + "\"!", logLevel::error );
         return -1;
     }
 
-    if( !exists( DataFileFolder ) ) {
-        writeLog( "Directory \"" + DataFileFolder.string() + "\" for DataFileFolder doesn't exist. Creating it...", logLevel::debug );
-        if( !create_directory( DataFileFolder ) ) {
-            writeLog( "Error creating data directory \"" + DataFileFolder.string() + "\"!", logLevel::error );
+    if( !exists( folders.dataFileFolder ) ) {
+        writeLog( "Directory \"" + folders.dataFileFolder.string() + "\" for DataFileFolder doesn't exist. Creating it...", logLevel::debug );
+        if( !create_directory( folders.dataFileFolder ) ) {
+            writeLog( "Error creating data directory \"" + folders.dataFileFolder.string() + "\"!", logLevel::error );
             return -1;
         }
     }
 
-    if( !exists( ScriptEngineFolder ) ) {
-        writeLog( "Directory \"" + ScriptEngineFolder.string() + "\" for ScriptEngineFolder doesn't exist. Creating it...", logLevel::debug );
-        if( !create_directory( ScriptEngineFolder ) ) {
-            writeLog( "Error creating script directory \"" + ScriptEngineFolder.string() + "\"!", logLevel::error );
+    if( !exists( folders.scriptEngineFolder ) ) {
+        writeLog( "Directory \"" + folders.scriptEngineFolder.string() + "\" for ScriptEngineFolder doesn't exist. Creating it...", logLevel::debug );
+        if( !create_directory( folders.scriptEngineFolder ) ) {
+            writeLog( "Error creating script directory \"" + folders.scriptEngineFolder.string() + "\"!", logLevel::error );
             return -1;
         }
     }
 
-    if( !exists( rulesFolder ) ) {
-        writeLog( "Directory \"" + rulesFolder.string() + "\" for rulesFolder doesn't exist. Creating it...", logLevel::debug );
-        if( !create_directory( rulesFolder ) ) {
-            writeLog( "Error creating determinator directory \"" + rulesFolder.string() + "\"!", logLevel::error );
+    if( !exists( folders.rulesFolder ) ) {
+        writeLog( "Directory \"" + folders.rulesFolder.string() + "\" for rulesFolder doesn't exist. Creating it...", logLevel::debug );
+        if( !create_directory( folders.rulesFolder ) ) {
+            writeLog( "Error creating determinator directory \"" + folders.rulesFolder.string() + "\"!", logLevel::error );
             return -1;
         }
     }
 
-    XplHalApplication app;
+    XplHalApplication app(folders);
     return app.exec();
 }
 

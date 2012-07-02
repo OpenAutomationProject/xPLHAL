@@ -17,8 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "boost/filesystem.hpp"
-
 /**
  * Define all global variables:
  */
@@ -28,11 +26,4 @@
 class xPLCacheClass;
 extern xPLCacheClass *xPLCache;
 
-class xPLHandler;
-extern xPLHandler *xPL;
 
-/** The working directories */
-extern boost::filesystem::path xPLHalRootFolder;
-extern boost::filesystem::path DataFileFolder;
-extern boost::filesystem::path ScriptEngineFolder;
-extern boost::filesystem::path rulesFolder;

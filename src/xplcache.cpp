@@ -57,7 +57,8 @@ xPLCacheClass::CacheFilter::CacheFilter( const string& filter ) :
     mfSchemClass = list[5];
 }
 
-xPLCacheClass::xPLCacheClass() 
+xPLCacheClass::xPLCacheClass(const boost::filesystem::path& dataFileFolder)
+:mDataFileFolder(dataFileFolder)
 {
     loadCache();
 }
@@ -156,7 +157,7 @@ void xPLCacheClass::loadCache( void )
 {
     mCache.clear();  // erase all entries
 
-    BFS::path objectCacheFile( DataFileFolder / "object_mCache.xml" );
+    BFS::path objectCacheFile( mDataFileFolder / "object_mCache.xml" );
     writeLog( "loadCache: ["+objectCacheFile.string()+"]", logLevel::debug ); 
     if( BFS::exists( objectCacheFile ) ) {
         writeLog( "Loading cached xPL object from file: "+objectCacheFile.string(), logLevel::debug );
