@@ -20,8 +20,10 @@
 #include "xplmessagequeue.h"
 
 #include <boost/algorithm/string/replace.hpp>
+#include <functional>
 
 using std::string;
+using namespace std::placeholders;
 
 #include "log.h"
 
@@ -177,12 +179,12 @@ void xPLHandler::handleXPLMessage( xPL_MessagePtr theMessage)
         
 void xPLHandler::startAsyncRead()
 {
-    m_xplSocket.async_read_some(boost::asio::null_buffers(), boost::bind(&xPLHandler::handleReadableXplSocket, this, _1));
+    m_xplSocket.async_read_some(boost::asio::null_buffers(), std::bind(&xPLHandler::handleReadableXplSocket, this, _1));
 }
 
 void xPLHandler::startAsyncWrite()
 {
-    m_xplWriteSocket.async_read_some(boost::asio::null_buffers(), boost::bind(&xPLHandler::handleReadableXplMessagequeue, this, _1));
+    m_xplWriteSocket.async_read_some(boost::asio::null_buffers(), std::bind(&xPLHandler::handleReadableXplMessagequeue, this, _1));
 }
 
 void xPLHandler::handleReadableXplMessagequeue(boost::system::error_code ec)
@@ -210,7 +212,7 @@ void xPLHandler::handleReadableXplSocket(boost::system::error_code ec)
     }
 }
 
-void xPLHandler::sendMessage( const xPLMessagePtr& message )
+void xPLHandler::sendMessage( const xPLMessagePtr message )
 {
     mXplMessageQueue->add(message);
 }

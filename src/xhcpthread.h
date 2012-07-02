@@ -20,8 +20,8 @@
 #include <map>
 
 #include <boost/smart_ptr.hpp>
-#include <boost/thread.hpp>
 #include <boost/asio.hpp>
+#include <thread>
 
 #include "xplcache.h"
 
@@ -85,5 +85,5 @@ class XHCPThread
     std::string commandSendXPlMessage   ( const std::string& parameter );
     std::string commandQuit             ( const std::string& parameter );
 
-    boost::thread m_thread;
+    std::thread m_thread;
 };

@@ -20,11 +20,13 @@
 #include <vector>
 #include <string>
 
+#define BOOST_BIND_NO_PLACEHOLDERS
 #include <boost/signals2/signal.hpp>
 #include <boost/asio.hpp>
 #include "xplmessage.h"
+#include "xplmessagequeue.h"
 
-class XplMessageQueue;
+//class XplMessageQueue;
 
 /**
  * \brief Handle all xPL communication.
@@ -40,7 +42,7 @@ class xPLHandler
 
         void run();
     
-        void sendMessage( const xPLMessagePtr& message );
+        void sendMessage( const xPLMessagePtr message );
 
         /** \brief Broadcast one message to the xPL network. */
         void sendBroadcastMessage( const std::string& msgClass, const std::string& msgType, const xPLMessage::namedValueList& namedValues );

@@ -15,7 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <functional>
 #include <signal.h>
+
 #include <boost/program_options.hpp>
 #include "log.h"
 #include "devicemanager.h"
@@ -38,6 +40,7 @@ using boost::program_options::notify;
 using std::cout;
 using std::endl;
 
+using namespace std::placeholders;
 path xPLHalRootFolder;
 path DataFileFolder;
 path ScriptEngineFolder;
@@ -60,12 +63,12 @@ class XplHalApplication
         ,mXHCPServer(new XHCPServer(m_ioservice, &mDeviceManager))
         ,mXpl(new xPLHandler(m_ioservice, boost::asio::ip::host_name() ))
         ,mDeterminatorManager("data")
-        ,mTimerListAllObjects(m_ioservice,      boost::posix_time::seconds(60), true)
-        ,mTimerFlushExpiredEntries(m_ioservice, boost::posix_time::minutes(5), true)
+        ,mTimerListAllObjects(m_ioservice,      std::chrono::seconds(60), true)
+        ,mTimerFlushExpiredEntries(m_ioservice, std::chrono::minutes(5), true)
 
         {
-            mDeviceManager.m_sigSendXplMessage.connect(boost::bind(&xPLHandler::sendMessage, mXpl, _1));
-            mXpl->m_sigRceivedXplMessage.connect(boost::bind(&DeviceManager::processXplMessage, &mDeviceManager, _1));
+            mDeviceManager.m_sigSendXplMessage.connect([&](const xPLMessagePtr ptr) {mXpl->sendMessage(ptr);});
+            mXpl->m_sigRceivedXplMessage.connect(std::bind(&DeviceManager::processXplMessage, &mDeviceManager, _1));
             mXpl->m_sigRceivedXplMessage.connect(mDeterminatorManager.m_sigRceivedXplMessage);
             installTimer();
 

@@ -18,7 +18,8 @@
 */
 
 #include <iostream>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
+#include <array>
 #include <boost/lexical_cast.hpp>
 
 using boost::lexical_cast;
@@ -87,9 +88,22 @@ class logBase
     bool showLogColor;     /**< \brief Status if colored logging should be used.     */
     bool showLogTimestamp; /**< \brief Status if timestamped logging should be used. */
 
+    template<class T>
+    std::string to_simple_string(const T& tp) 
+    {
+        using namespace std::chrono;
+        using namespace std;
+        array<char, 50> buffer;
+        const time_t now_c = T::clock::to_time_t(tp);
+        strftime(&buffer[0], buffer.size(), "%F %T", localtime(&now_c)); 
+        const auto secs = duration_cast<seconds>(tp.time_since_epoch());
+        const auto fractional = duration_cast<milliseconds>(tp.time_since_epoch() - secs);
+        return std::string(&buffer[0]) + "." + lexical_cast<std::string>(fractional.count());
+    }
+
     void doLog( std::string message, logLevel::logLevel level )
     {
-      std::string timestamp( to_simple_string(boost::posix_time::microsec_clock::local_time()) );
+      std::string timestamp( to_simple_string( std::chrono::high_resolution_clock::now() ));
       if( level >= currentLogLevel ) 
       {
         if( showLogColor     ) std::cout << escape::FgGray;

@@ -49,7 +49,7 @@ XHCPThread::XHCPThread( socket_ptr socket, DeviceManager* dm )
      , quit( false )
      , inMultilineRequest( false )
      , multilineRequestHandler( 0 )
-     , m_thread(boost::bind(&XHCPThread::run, this))
+     , m_thread(std::bind(&XHCPThread::run, this))
      , m_deviceManager(dm)
 {
 }

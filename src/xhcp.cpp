@@ -41,7 +41,7 @@ XHCPServer::~XHCPServer()
 void XHCPServer::startAccept()
 {
     socket_ptr sockPtr(new tcp::socket(m_io));
-    m_acceptor.async_accept(*sockPtr, boost::bind(&XHCPServer::handleAccept, this, sockPtr));
+    m_acceptor.async_accept(*sockPtr, std::bind(&XHCPServer::handleAccept, this, sockPtr));
 }
 
 void XHCPServer::handleAccept(socket_ptr sockPtr)
