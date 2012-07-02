@@ -46,7 +46,7 @@ class Determinator
         bool checkInputs() const;
         bool executeOutputs() const;
 
-        std::vector<std::future<bool>> mExecFutures;
+        std::vector<std::shared_future<bool>> mExecFutures;
 };
 
 typedef std::shared_ptr<Determinator> DeterminatorPtr;

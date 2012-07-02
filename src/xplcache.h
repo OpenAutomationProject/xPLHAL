@@ -21,13 +21,16 @@
 #include <vector>
 #include <map>
 #include <chrono>
-#include <thread>
+#include <mutex>
 
 #include <boost/regex.hpp>
 #include "i_xplcache.h"
 
+
+#if !((__GNUG__ >= 4) && (__GNUC_MINOR__ >= 7))
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 #define steady_clock monotonic_clock
+#endif
 #endif
 
 /**

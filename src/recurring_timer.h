@@ -17,7 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define BOOST_BIND_NO_PLACEHOLDERS
 #include <boost/asio.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/signals2/signal.hpp>
 
 /**
@@ -28,7 +30,7 @@
 class RecurringTimer
 {
     public:
-        RecurringTimer(boost::asio::io_service& io_service, const boost::asio::deadline_timer::duration_type& expiry_time, bool startTimer = false);
+        RecurringTimer(boost::asio::io_service& io_service, const boost::asio::steady_timer::duration& expiry_time, bool startTimer = false);
         ~RecurringTimer();
 
         void start();
@@ -44,8 +46,8 @@ class RecurringTimer
     private:
         void onExpire(const boost::system::error_code& e);
 
-        const boost::asio::deadline_timer::duration_type m_delay;
+        const boost::asio::steady_timer::duration m_delay;
         bool m_running;
-        boost::asio::deadline_timer m_timer; 
+        boost::asio::steady_timer m_timer; 
 };
 

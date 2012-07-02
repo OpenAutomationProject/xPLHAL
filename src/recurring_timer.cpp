@@ -16,10 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "recurring_timer.h"
-#include <boost/bind.hpp>
+
+using namespace std::placeholders;
 
 RecurringTimer::RecurringTimer(boost::asio::io_service& io_service, 
-        const boost::asio::deadline_timer::duration_type& expiry_time, 
+        const boost::asio::steady_timer::duration& expiry_time, 
         bool startTimer)
 :m_timer(io_service, expiry_time)
 ,m_delay(expiry_time)
@@ -38,7 +39,7 @@ RecurringTimer::~RecurringTimer()
 void RecurringTimer::start() 
 {
     m_running = true;
-    m_timer.async_wait(boost::bind(&RecurringTimer::onExpire, this, _1));
+    m_timer.async_wait(std::bind(&RecurringTimer::onExpire, this, _1));
 }
 
 void RecurringTimer::stop() 
@@ -51,7 +52,7 @@ void RecurringTimer::onExpire(const boost::system::error_code& e)
 {
     if (m_running) {
         m_timer.expires_at(m_timer.expires_at() + m_delay);
-        m_timer.async_wait(boost::bind(&RecurringTimer::onExpire, this, _1));
+        m_timer.async_wait(std::bind(&RecurringTimer::onExpire, this, _1));
     }
     sigExpired(e);
 }

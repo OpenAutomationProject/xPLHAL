@@ -29,7 +29,7 @@
 #include "globals.h"
 
 using boost::filesystem::path;
-using boost::filesystem::initial_path;
+using boost::filesystem::current_path;
 using boost::program_options::options_description;
 using boost::program_options::variables_map;
 using boost::program_options::store;

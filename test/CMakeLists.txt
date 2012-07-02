@@ -35,7 +35,7 @@ include_directories(../src /usr/local/include)
 
 enable_testing()
 
-set(CMAKE_CXX_FLAGS "-g -Os -std=c++0x -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS "-g -Os -std=c++11 -fprofile-arcs -ftest-coverage")
 #set(xPLHALTest_SRCS test_test.cpp test_xplcache.cpp)
 #add_executable(test_runner ${xPLHALTest_SRCS})
 #message(STATUS "Boost_LIBRARIES=${Boost_LIBRARIES}")

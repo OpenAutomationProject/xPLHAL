@@ -201,9 +201,10 @@ void Determinator::execute()
 {
     if (checkInputs()) {
         if (mExecFutures.empty() || mExecFutures[0].valid()) {
-            mExecFutures.erase(mExecFutures.begin(), mExecFutures.end());
+            mExecFutures.clear();
+//            mExecFutures.erase(mExecFutures.begin(), mExecFutures.end());
             cerr << "determinator start thread" << endl;
-            mExecFutures.push_back(std::async(std::launch::async, std::bind(&Determinator::executeOutputs, this)));
+            mExecFutures.emplace_back(std::async(std::launch::async, std::bind(&Determinator::executeOutputs, this)));
             cerr << "determinator start thread" << endl;
         }
     }

@@ -31,7 +31,7 @@ void DeterminatorManager::loadDeterminators()
 
                 for (auto item = directory_iterator(p); item != directory_iterator(); ++item) {
                     ifstream determinatorFile(*item);
-                    std::string filename = item->string();
+                    std::string filename = item->path().string();
                     //storeXmlDeterminator("guid", determinatorFile.read());
                     cout << "diritem: " << *item << "\n";
                     DeterminatorXmlParser parser(filename);
